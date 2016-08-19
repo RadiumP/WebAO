@@ -1,0 +1,831 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<title></title>
+<meta charset="UTF-8">                             
+<!--
+<script type="text/javascript" src="js/webglinspector/core/embed2.js"></script>
+-->
+<script type="text/javascript" src="js/pregl.js"></script>
+<script type="text/javascript" src="js/preglext.js"></script>
+<script type="text/javascript" src="js/seedrandom.js"></script>
+<script type="text/javascript" src="js/webgl-obj-loader.js"></script>
+<script>                    
+/*     
+SSAO from http://www.john-chapman.net/content.php?id=8 
+
+*/                
+window.onload = function() {        
+	var canvas = document.getElementById("canvas");
+	var gl = PreGL.WebGL.getContext(canvas); 
+	//gl = PreGL.WebGL.wrappedContextWithErrorChecks(gl);
+	var time = 0;  
+	var sphere;   
+	var plane;    		
+	var renderDepthShader;    
+	var blurShader;	
+	var ssaoFSQuad;             
+	var ssaoShader;   
+	var hbaoShader;
+	var noiseTexture;
+	var depthFbo; 
+	var normalFbo;     
+	var ssaoFbo;    
+	var prevTime = 0;  
+	var fpsFrames = 0;
+	var fpsTime = 0;
+	var fps = 0; 
+	var kernel = [];
+	var model;
+	
+	function setup() {     
+		var supported = gl.getSupportedExtensions();                  
+		PreGLExt.log("Supported WebGL extensions: " + supported);
+		//shader  		
+		renderDepthShader = new Shader(gl, "showDepth.vert", "showDepth.frag");   		
+		ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
+
+		hbaoShader = new Shader(gl, "hbao.vert", "hbao.frag");
+
+		blurShader = new Shader(gl, "baseTexture.vert", "blur.frag");
+		
+		sphere = SimpleMesh.buildSphere(gl, 1);	 
+		plane = SimpleMesh.buildPlaneXY(gl, 1, 1);   
+		
+		var objStr = document.getElementById('my_cube.obj').innerHTML;
+		//load obj
+		model = SimpleMesh.loadObj(gl,objStr);
+
+
+		ssaoFSQuad = new FullScreenQuad(gl);
+		depthFbo = new FBO(gl, 1024, 512); 
+		normalFbo = new FBO(gl, 1024, 512);  
+		ssaoFbo = new FBO(gl, 1024, 512);
+		
+		noiseTexture = genNoiseTextureRGBA(gl, 4, 4);  
+		
+		prevTime = (new Date()).getTime();  
+		
+		
+		var kernelSize = 16;
+		for(var i=0; i<kernelSize; i++) {
+			kernel.push(2.0 * (Math.random() - 0.5));
+			kernel.push(2.0 * (Math.random() - 0.5));
+			kernel.push(Math.random());				
+		}
+	}             		 		
+	function draw() {        
+		var currTime = (new Date()).getTime();
+		var deltaTime = (currTime - prevTime)/1000;
+		prevTime = currTime;		                              
+		time += deltaTime;	  
+		fpsTime += deltaTime;
+		fpsFrames++;
+		if (fpsTime > 5) {
+			fps = fpsFrames / fpsTime;
+			fpsTime = 0;   
+			fpsFrames = 0;			
+			PreGLExt.log("FPS : " + fps);  
+		}          
+		
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);						
+		gl.enable(gl.DEPTH_TEST);      
+		
+		var cameraPos = new PreGL.Vec3(4 * Math.cos(time), 0, 4 * Math.sin(time));
+		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 20, cameraPos);
+		
+		PreGLExt.once("camera frustum", function() {
+		   var frustumCorners = camera.getFrustumCorners();
+		});
+
+	    depthFbo.bind();		
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.viewport(0, 0, depthFbo.width, depthFbo.height);                               	  
+		renderScene(camera, renderDepthShader, time); 
+		depthFbo.unbind(); 
+                  
+		ssaoFbo.bind();    
+		gl.clearColor(0, 0, 0, 1);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.viewport(0, 0, ssaoFbo.width, ssaoFbo.height);
+		
+		//SSAO
+		ssaoShader.use();           			
+		ssaoShader.set("depthTex", 0);    
+		ssaoShader.set("noiseTex", 1);    
+		ssaoShader.set("fov", camera.fov/180*Math.PI);  
+		ssaoShader.set("aspectRatio", camera.aspectRatio);
+		ssaoShader.set("noiseScale", [depthFbo.width/noiseTexture.width, depthFbo.height/noiseTexture.height]); //4 = noise texture width
+		ssaoShader.set("kernel", kernel);
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);    
+		gl.activeTexture(gl.TEXTURE1);            
+		gl.bindTexture(gl.TEXTURE_2D, noiseTexture); 
+
+		//renderScene(camera, ssaoShader, time);
+		
+		gl.activeTexture(gl.TEXTURE0);  
+		//ssaoFbo.unbind(); 
+
+		//HBAO
+		hbaoShader.use();
+		hbaoShader.set("depthTex", 0);    
+		hbaoShader.set("noiseTex", 1);
+		
+		
+		var fov = camera.fov / 180*Math.PI;
+		var FocalLen = [1.0 / Math.tan(fov * 0.5) * camera.aspectRatio, 1.0 / Math.tan(fov * 0.5)];
+		var UVToViewA = [-2.0 / FocalLen[0], -2.0 / FocalLen[1]];
+		var UVToViewB = [1.0 / FocalLen[0], 1.0 / FocalLen[1]];
+		hbaoShader.set("FocalLen", FocalLen); 
+		hbaoShader.set("UVToViewB", UVToViewB);
+		hbaoShader.set("UVToViewA", UVToViewA);
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);    
+		gl.activeTexture(gl.TEXTURE1);            
+		gl.bindTexture(gl.TEXTURE_2D, noiseTexture); 
+
+		renderScene(camera, hbaoShader, time);
+		
+		gl.activeTexture(gl.TEXTURE0);  
+		ssaoFbo.unbind(); 
+
+		//blur	 
+		blurShader.use();           			
+		blurShader.set("colorTex", 0);    
+		blurShader.set("texelSize", [1/ssaoFbo.width, 1/ssaoFbo.height]);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, ssaoFbo.colorBuffer);    
+		ssaoFSQuad.draw(blurShader); 
+		gl.activeTexture(gl.TEXTURE0);  
+		
+		
+		gl.viewport(0, 0, canvas.width, canvas.height);  
+		
+		requestAnimFrame(draw, canvas);
+	}               
+	function renderScene(camera, shader, time) {
+		shader.use();           
+		shader.set("projectionMatrix", camera.projectionMatrix);		
+		shader.set("normalMatrix", camera.viewMatrix);		
+		shader.set("near", camera.near);
+		shader.set("far", camera.far);    
+		      
+		Math.seedrandom('spheres');        
+		for(var i=0; i<30; i++) {        
+			var scale = 0.25 + Math.random() * 0.25;                         
+			var x = (Math.random() - 0.5) * 2.0;
+			var y = (Math.random() - 0.5) * 2.0;
+			var z = (Math.random() - 0.5) * 2.0;
+			if (i<0) {
+				var pos = new PreGL.Vec3(x, y, z);
+				pos = pos.normalized().scaled(8);
+				x = pos.x;
+				y = pos.y;
+				z = pos.z;   
+				scale = 3;
+			}   
+			else {
+				x = Math.cos(time + x);    
+				y = Math.sin(time + y);  				
+			}
+			var modelViewMatrix = camera.getModelViewMatrix([x, y, z], null, [scale, scale, scale]);			
+			shader.set("modelViewMatrix", modelViewMatrix);                                         
+			var normalMatrix = modelViewMatrix.invert().transpose();
+			shader.set("normalMatrix", normalMatrix);
+			//sphere.draw(shader);	
+		}  		          
+		
+		var modelViewMatrix = camera.getModelViewMatrix([0, 0, 0.01], null, [3, 1, 1]);			
+		shader.set("modelViewMatrix", modelViewMatrix);                                         
+		var normalMatrix = modelViewMatrix.invert().transpose();
+		shader.set("normalMatrix", normalMatrix);
+		//plane.draw(shader);	
+		
+		modelViewMatrix = camera.getModelViewMatrix([0, 0, -0.01], [Math.PI, 0, 1, 0], [3, 1, 1]);			
+		shader.set("modelViewMatrix", modelViewMatrix);                                         
+		normalMatrix = modelViewMatrix.invert().transpose();
+		shader.set("normalMatrix", normalMatrix);   
+		//plane.draw(shader);	
+
+		model.draw(shader);
+
+	}
+
+
+
+	function start() {
+		//setInterval(draw, 1000/60);
+		requestAnimFrame(draw, canvas);
+	}       
+	setup();     		
+	start();
+}                            	
+</script>
+<script type="glsl" id="base.vert">
+	attribute vec4 position;
+	attribute vec3 normal;
+	attribute vec2 texCoord;
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  
+
+	varying vec3 vN;
+	varying vec2 vTexCoord;  
+
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+		vN = normal;            
+	   	vTexCoord = texCoord;
+	}
+</script>
+<script type="glsl" id="baseTexture.vert">
+	attribute vec4 position;
+	attribute vec2 texCoord;
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  
+
+	varying vec2 vTexCoord;
+
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+	   	vTexCoord = texCoord;
+	}
+</script>                     
+<script type="glsl" id="solidColor.frag">  
+	uniform vec4 color;
+
+	void main() {
+		gl_FragColor = color;
+	}
+</script>
+<script type="glsl" id="showNormal.frag">  
+	varying vec3 vN;
+
+	void main() {
+		gl_FragColor.rgb = vN*0.5 + 0.5;
+		gl_FragColor.a = 1.0;
+	}
+</script>
+<script type="glsl" id="showTexCoord.frag">  
+	varying vec2 vTexCoord;
+
+	void main() {
+		gl_FragColor.rg = vTexCoord;
+		gl_FragColor.a = 1.0;
+	}
+</script> 
+<script type="glsl" id="baseTexture.frag">  
+	uniform sampler2D diffuseTex;
+	varying vec2 vTexCoord; 	
+
+	void main() {
+		gl_FragColor.rgba = texture2D(diffuseTex, vTexCoord);
+		gl_FragColor.a = 1.0;
+	}
+</script>  
+<script type="glsl" id="baseTexture.frag">  
+	uniform sampler2D diffuseTex;
+	varying vec2 vTexCoord; 	
+
+	void main() {
+		gl_FragColor.rgba = texture2D(diffuseTex, vTexCoord);
+		gl_FragColor.a = 1.0;
+	}
+</script>         
+<script type="glsl" id="showDepth.vert">    
+	attribute vec4 position;
+	attribute vec3 normal;
+	attribute vec2 texCoord;
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  	
+	uniform mat4 normalMatrix;  	
+	uniform float near;
+	uniform float far;
+
+	varying vec3 vN;
+	varying vec2 vTexCoord;
+	varying float depth;                                            
+	varying vec4 vVSPos;
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;		
+		vN = normalize((normalMatrix * vec4(normal, 1.0)).xyz);
+		
+		//linear depth in camera space (0..far)
+		depth = (modelViewMatrix * position).z/far;
+				
+	   	vTexCoord = texCoord;        
+		vVSPos = modelViewMatrix * position;
+	}                        
+
+</script>
+<script type="glsl" id="showDepth.frag"> 
+	#ifdef GL_ES
+	precision highp float;
+	#endif          
+	uniform float near;
+	uniform float far;
+
+	varying float depth;   
+	varying vec3 vN;     
+	varying vec4 vVSPos;  
+
+	//from http://spidergl.org/example.php?id=6
+	vec4 packDepth(const in float depth) {
+		const vec4 bit_shift = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);
+		const vec4 bit_mask  = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);
+		vec4 res = fract(depth * bit_shift);
+		res -= res.xxyz * bit_mask;
+		return res;    		
+	}
+
+	void main() {         
+		gl_FragData[0] = packDepth(-depth);
+		gl_FragData[0].r = -depth/far;
+	}
+</script>  
+
+<script type="glsl" id="ssao.vert">  
+	attribute vec4 position;
+	attribute vec3 normal;
+	attribute vec2 texCoord;
+	
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  
+	uniform mat4 normalMatrix;  
+
+	varying vec3 vNormal;
+	varying vec2 vTexCoord;  
+
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+		vNormal = (normalMatrix * vec4(normal, 1.0)).xyz;
+	   	vTexCoord = texCoord;
+	}
+</script>
+
+<script type="glsl" id="hbao.vert">  
+	attribute vec4 position;
+	attribute vec3 normal;
+	attribute vec2 texCoord;
+	
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  
+	uniform mat4 normalMatrix;  
+
+	varying vec3 vNormal;
+	varying vec2 vTexCoord;  
+
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+		vNormal = (normalMatrix * vec4(normal, 1.0)).xyz;
+	   	vTexCoord = texCoord;
+	}
+</script>
+
+
+
+
+<script type="glsl" id="ssao.frag">  
+	uniform sampler2D depthTex;
+	uniform sampler2D noiseTex;  
+	varying vec3 vNormal;
+	uniform mat4 projectionMatrix;
+	
+	uniform vec2 noiseScale;
+	uniform float near;
+	uniform float far;            
+	uniform float fov;
+	uniform float aspectRatio;    
+	uniform vec3 kernel[16];   
+	
+	varying vec2 vTexCoord;   
+
+	const int kernelSize = 16;  
+	const float radius = 0.1;      
+
+	float unpackDepth(const in vec4 rgba_depth) {
+		const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+		float depth = dot(rgba_depth, bit_shift);
+		return depth;
+	}                
+
+	vec3 getViewRay(vec2 tc) {
+		float hfar = 2.0 * tan(fov/2.0) * far;
+		float wfar = hfar * aspectRatio;    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		return ray;                      
+	}         
+	           
+	//linear view space depth
+	float getDepth(vec2 coord) {                          
+		return unpackDepth(texture2D(depthTex, coord.xy));
+	}    
+	
+	void main() {          
+		vec2 screenPos = vec2(gl_FragCoord.x / 1024.0, gl_FragCoord.y / 512.0);		                 
+		//screenPos.y = 1.0 - screenPos.y;   
+		
+		
+		float linearDepth = getDepth(screenPos);          
+		vec3 origin = getViewRay(screenPos) * linearDepth;   
+				
+		vec3 normal = normalize(vNormal);   
+				
+		vec3 rvec = texture2D(noiseTex, screenPos.xy * noiseScale).xyz * 2.0 - 1.0;
+	    vec3 tangent = normalize(rvec - normal * dot(rvec, normal));
+	    vec3 bitangent = cross(normal, tangent);
+		mat3 tbn = mat3(tangent, bitangent, normal);        
+		
+		float occlusion = 0.0;
+		for(int i = 0; i < kernelSize; ++i) {    	 
+			vec3 sample = origin + (tbn * kernel[i]) * radius;
+		    vec4 offset = projectionMatrix * vec4(sample, 1.0);		
+			offset.xy /= offset.w;
+			offset.xy = offset.xy * 0.5 + 0.5;        
+		    float sampleDepth = -sample.z/far;
+			float depthBufferValue = getDepth(offset.xy);				              
+			float range_check = abs(linearDepth - depthBufferValue);
+			if (range_check < radius && depthBufferValue <= sampleDepth) {
+				occlusion +=  1.0;
+			}
+			
+		}         
+		   
+		occlusion = 1.0 - occlusion / float(kernelSize);
+                                   
+		vec3 lightPos = vec3(10.0, 10.0, 10.0);
+        vec3 L = normalize(lightPos);
+		float NdotL = abs(dot(normal, L));
+		vec3 diffuse = vec3(NdotL);
+		vec3 ambient = vec3(1.0);
+	    gl_FragColor.rgb = vec3((diffuse*0.2 + ambient*0.8) * occlusion);
+		//gl_FragColor.rgb = normal;
+	    gl_FragColor.a = 1.0;   
+	}
+</script>  
+
+<script type="glsl" id="hbao.frag">  
+	uniform sampler2D depthTex;
+	uniform sampler2D noiseTex;  
+	
+	uniform mat4 projectionMatrix;
+	
+	uniform vec2 noiseScale;
+	
+	uniform vec2 FocalLen;
+	uniform vec2 UVToViewA;
+	uniform vec2 UVToViewB;
+
+	uniform float near;
+	uniform float far;            
+	uniform float fov;
+	uniform float aspectRatio;  
+	
+
+	const vec2 AORes = vec2(1024.0, 768.0);
+	const vec2 InvAORes = vec2(1.0/1024.0, 1.0/768.0); 
+	const float PI = 3.14159265;  
+	
+	varying vec2 vTexCoord;   
+	varying vec3 vNormal;
+	
+	
+	const float R = 0.3; 
+	const float R2 = 0.3 * 0.3;     
+	const float AOStrength = 1.9;
+	const float NegInvR2 = -1.0 / (0.3 * 0.3);
+	const float TanBias = tan (45.0 * PI / 180.0);
+	const float MaxRadiusPixels = 100.0;
+
+	const int NumDirections = 6;
+	const int NumSamples = 4;
+
+	float unpackDepth(const in vec4 rgba_depth) {
+		const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+		float depth = dot(rgba_depth, bit_shift);
+		return depth;
+	}                
+
+	vec3 getViewRay(vec2 tc) {
+		float hfar = 2.0 * tan(fov/2.0) * far;
+		float wfar = hfar * aspectRatio;    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		return ray;                      
+	}         
+	           
+	//linear view space depth
+	float getDepth(vec2 coord) {                          
+		return unpackDepth(texture2D(depthTex, coord.xy));
+	}    
+	//changed 
+	vec3 UVToViewSpace(vec2 uv, float z)
+	{
+		//uv = UVToViewA * uv + UVToViewB;
+		return vec3(uv , z);
+	}
+
+
+	vec3 GetViewPos(vec2 uv)
+	{
+		vec3 depth = getViewRay(uv) * getDepth(uv);
+		float z = depth.z / far;
+		return UVToViewSpace(uv, z);
+	}
+
+	float TanToSin(float x)
+	{
+		return x * inversesqrt(x * x + 1.0);
+	}
+
+
+	float InvLength(vec2 V)
+	{
+		return inversesqrt(dot(V,V));
+	}
+
+	float Tangent(vec3 V)
+	{
+		return V.z * InvLength(V.xy);
+	}
+
+	float BiasedTangent(vec3 V)
+	{
+		return V.z * InvLength(V.xy) + TanBias;
+	}
+
+	float Tangent(vec3 P, vec3 S)
+	{
+		return -(P.z - S.z) * InvLength(S.xy - P.xy);
+	}
+
+	float Length2(vec3 V)
+	{
+		return dot(V,V);
+	}
+
+	vec3 MinDiff(vec3 P, vec3 Pr, vec3 Pl)
+	{
+		vec3 V1 = Pr - P;
+		vec3 V2 = P - Pl;
+		return (Length2(V1) < Length2(V2)) ? V1 : V2;
+	}
+
+	vec2 SnapUVOffset(vec2 uv)
+	{
+		return floor(uv * AORes) * InvAORes;
+	}
+
+	float Falloff(float d2)
+	{
+		return d2 * NegInvR2 + 1.0;
+	}
+
+	float HorizonOcclusion(vec2 deltaUV, vec3 P, vec3 dPdu, vec3 dPdv, float randstep,  float numSamples)
+	{
+		float ao = 0.0;
+
+		vec2 uv = vTexCoord + SnapUVOffset(randstep * deltaUV);
+		deltaUV = SnapUVOffset(deltaUV);
+
+		vec3 T = deltaUV.x * dPdu + deltaUV.y * dPdv;
+
+		float tanH = BiasedTangent(T);
+		float sinH = TanToSin(tanH);
+
+		float tanS;
+		float d2;
+		vec3 S;
+
+		// for(float s = 1.0; s <= numSamples; ++s)
+		// {
+		for(float i = 1.0; i < 64.0; i++)
+		{
+			if(i <= numSamples)
+			{
+				uv += deltaUV;
+				S = GetViewPos(uv);
+				tanS = Tangent(P, S);
+				d2 = Length2(S - P);
+
+				if(d2 < R2 && tanS > tanH)
+				{
+					float sinS = TanToSin(tanS);
+					ao += Falloff(d2) * (sinS - sinH);
+
+					tanH = tanS;
+					sinH = sinS;
+				}
+			}
+			else
+			{
+				break;
+			}
+			
+
+			
+		}
+		// }
+
+		return ao;
+
+	}
+
+	vec2 RotateDirections(vec2 Dir, vec2 CosSin)
+	{
+		return vec2(Dir.x * CosSin.x - Dir.y * CosSin.y, Dir.x * CosSin.y + Dir.y * CosSin.x);
+	}
+
+	void ComputeSteps(inout vec2 stepSizeUv, inout float numSteps, float rayRadiusPix, float rand)
+	{
+		
+		numSteps = min(float(NumSamples), rayRadiusPix);
+		float stepSizePix = rayRadiusPix / (numSteps + 1.0);
+		float maxNumSteps = MaxRadiusPixels / stepSizePix;
+		if(maxNumSteps < numSteps)
+		{
+			numSteps = floor(maxNumSteps + rand);
+			numSteps = max(numSteps, 1.0);
+			stepSizePix = MaxRadiusPixels / numSteps;
+		}
+
+		stepSizeUv = stepSizePix * InvAORes;
+	}
+
+	
+	void main() 
+	{          
+		float numDirections = float(NumDirections);
+
+		vec3 P, Pr, Pl, Pt, Pb;
+		P = GetViewPos(vTexCoord);
+
+		Pr = GetViewPos(vTexCoord + vec2(InvAORes.x, 0.0));
+		Pl = GetViewPos(vTexCoord + vec2(-InvAORes.x, 0.0));
+		Pt = GetViewPos(vTexCoord + vec2(0.0, InvAORes.y));
+		Pb = GetViewPos(vTexCoord + vec2(0.0, -InvAORes.y));
+
+
+		vec3 dPdu = MinDiff(P, Pr, Pl);
+	    vec3 dPdv = MinDiff(P, Pt, Pb) * (AORes.y * InvAORes.x);
+
+	    vec3 random = texture2D(noiseTex, vTexCoord.xy * noiseScale).xyz * 2.0 - 1.0;
+
+	    vec2 rayRadiusUV = 0.5 * R * FocalLen / -P.z;
+	    float rayRadiusPix = rayRadiusUV.x * AORes.x;
+
+	    float ao = 1.0;
+
+	    if(rayRadiusPix > 1.0)//
+	    {
+	    	//gl_FragColor = vec4(1.0, ao, ao, 1.0);
+	    	ao = 0.0;
+	    	float numSteps;
+	    	vec2 stepSizeUV;
+
+	    	// Compute the number of steps
+	    	ComputeSteps(stepSizeUV, numSteps, rayRadiusPix, random.z);
+
+			float alpha = 2.0 * PI / numDirections;
+
+			// Calculate the horizon occlusion of each direction
+			
+			//for(float d = 0.0; d < numDirections; ++d)
+			//{
+			for(float i = 1.0; i < 64.0; i++)
+			{
+				if(i <= numDirections)
+				{
+					float theta = alpha * i;
+
+					// Apply noise to the direction
+					vec2 dir = RotateDirections(vec2(cos(theta), sin(theta)), random.xy);
+					vec2 deltaUV = dir * stepSizeUV;
+
+					// Sample the pixels along the direction
+					ao += HorizonOcclusion(	deltaUV,
+											P,
+											dPdu,
+											dPdv,
+											random.z,
+											numSteps);
+				}
+				else
+				{
+					break;
+				}
+			}
+			//}
+
+			// Average the results and produce the final AO
+			ao = 1.0 - ao / numDirections * AOStrength;
+			//ao = 0.0;
+			
+		}
+
+		// //out_frag0 = vec2(ao, 30.0 * P.z);
+		// //FragColor = ao;
+		// //FragColor = texture(gPositionDepth, vTexCoords).xy;
+		//gl_FragColor = vec4(0.0, 30.0 * P.z, 1.0, 1.0);
+		
+		gl_FragColor = vec4(ao, ao, ao, 1.0);
+	}
+</script>  
+
+
+
+
+<script type="glsl" id="blur.frag">  
+	uniform sampler2D colorTex;
+	uniform vec2 texelSize;
+	varying vec2 vTexCoord; 	 	
+
+	void main() {
+		vec3 result = vec3(0.0);
+		for (int i = 0; i < 4; ++i) {
+			for (int j = 0; j < 4; ++j) {
+				vec2 offset = vec2(texelSize.x * float(j), texelSize.y * float(i));
+				result += texture2D(colorTex, vTexCoord + offset).rgb;
+			}
+		}
+		       
+		gl_FragColor.rgb = vec3(result * 0.0625); 
+		gl_FragColor.a = 1.0;
+	}
+</script>
+
+<script type="text/plain" id="my_cube.obj">
+            # cube.obj
+#
+
+o cube
+mtllib cube.mtl
+
+v -0.500000 -0.500000 0.500000
+v 0.500000 -0.500000 0.500000
+v -0.500000 0.500000 0.500000
+v 0.500000 0.500000 0.500000
+v -0.500000 0.500000 -0.500000
+v 0.500000 0.500000 -0.500000
+v -0.500000 -0.500000 -0.500000
+v 0.500000 -0.500000 -0.500000
+
+vt 0.000000 0.000000
+vt 1.000000 0.000000
+vt 0.000000 1.000000
+vt 1.000000 1.000000
+
+vn 0.000000 0.000000 1.000000
+vn 0.000000 1.000000 0.000000
+vn 0.000000 0.000000 -1.000000
+vn 0.000000 -1.000000 0.000000
+vn 1.000000 0.000000 0.000000
+vn -1.000000 0.000000 0.000000
+
+g cube
+usemtl cube
+
+f 1/1/1 2/2/1 3/3/1
+f 3/3/1 2/2/1 4/4/1
+
+f 3/1/2 4/2/2 5/3/2
+f 5/3/2 4/2/2 6/4/2
+
+f 5/4/3 6/3/3 7/2/3
+f 7/2/3 6/3/3 8/1/3
+
+f 7/1/4 8/2/4 1/3/4
+f 1/3/4 8/2/4 2/4/4
+
+f 2/1/5 8/2/5 4/3/5
+f 4/3/5 8/2/5 6/4/5
+
+f 7/1/6 1/2/6 5/3/6
+f 5/3/6 1/2/6 3/4/6
+        </script>
+
+
+
+<style type="text/css">
+	body {
+		margin: 0;  
+		background: #000;
+	}        
+	#canvas {    
+		width: 1024px;
+		margin: 0 auto; 
+		display: block;
+	}
+</style>
+</head>
+<body>	    
+	<canvas id="canvas" width="1024" height="512"></canvas> 
+		
+</body>
+</html>
