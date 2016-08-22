@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<title></title>
+<meta charset="UTF-8">                             
+<!--
+<script type="text/javascript" src="js/webglinspector/core/embed2.js"></script>
+-->
+<script type="text/javascript" src="js/pregl.js"></script>
+<script type="text/javascript" src="js/preglext.js"></script>
+<script type="text/javascript" src="js/seedrandom.js"></script>
+<script type="text/javascript" src="js/webgl-obj-loader.js"></script>
+<script> 
+
+
+window.onload = function() {  
+	var canvas = document.getElementById("canvas");
+	var gl = PreGL.WebGL.getContext(canvas);
+
+	var time = 0;  
+	var sphere;   
+	var plane;    		
+	var renderDepthShader;    
+	var blurShader;	
+	var ssaoFSQuad;             
+	var ssaoShader;   
+	var hbaoShader;
+	var noiseTexture;
+	var depthFbo; 
+	var normalFbo;     
+	var ssaoFbo;    
+	var prevTime = 0;  
+	var fpsFrames = 0;
+	var fpsTime = 0;
+	var fps = 0; 
+	var kernel = [];
+	var model;
+
+
+	function setup() { 
+		
+
+	}
+
+}
+
+
+</script>
