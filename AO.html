@@ -130,6 +130,7 @@ window.onload = function() {
 		gl.activeTexture(gl.TEXTURE0);  
 		ssaoFbo.unbind(); 
 
+<<<<<<< HEAD
 		//  //HBAO
 
 		//  ssaoFbo.bind(); 
@@ -140,6 +141,28 @@ window.onload = function() {
 		//  hbaoShader.use();
 		//  hbaoShader.set("depthTex", 0);    
 		//  hbaoShader.set("noiseTex", 1);
+=======
+		// //HBAO
+		// hbaoShader.use();
+		// hbaoShader.set("depthTex", 0);    
+		// hbaoShader.set("noiseTex", 1);
+		
+		
+		// var fov = camera.fov / 180*Math.PI;
+		// var FocalLen = [1.0 / Math.tan(fov * 0.5) * camera.aspectRatio, 1.0 / Math.tan(fov * 0.5)];
+		// var UVToViewA = [-2.0 / FocalLen[0], -2.0 / FocalLen[1]];
+		// var UVToViewB = [1.0 / FocalLen[0], 1.0 / FocalLen[1]];
+		// hbaoShader.set("FocalLen", FocalLen); 
+		// hbaoShader.set("UVToViewB", UVToViewB);
+		// hbaoShader.set("UVToViewA", UVToViewA);
+
+		// gl.activeTexture(gl.TEXTURE0);
+		// gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);    
+		// gl.activeTexture(gl.TEXTURE1);            
+		// gl.bindTexture(gl.TEXTURE_2D, noiseTexture); 
+
+		// renderScene(camera, hbaoShader, time);
+>>>>>>> origin/master
 		
 		
 		// var fov = camera.fov / 180*Math.PI;
@@ -212,10 +235,15 @@ window.onload = function() {
 		var normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);
 		//plane.draw(shader);	
+<<<<<<< HEAD
 		model.draw(shader);
 
 
 		modelViewMatrix = camera.getModelViewMatrix([0, 0, -0.01], [Math.PI, 0, 1, 0], [3, 1, 1]);			
+=======
+		
+		modelViewMatrix = camera.getModelViewMatrix([0, 0, -0.01], [Math.PI, 0, 1, 0], [3, 3, 3]);			
+>>>>>>> origin/master
 		shader.set("modelViewMatrix", modelViewMatrix);                                         
 		normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);   
@@ -788,7 +816,11 @@ window.onload = function() {
 </script>
 
 <script type="text/plain" id="my_cube.obj">
+<<<<<<< HEAD
 # Blender v2.77 (sub 0) OBJ File: ''
+=======
+ # Blender v2.77 (sub 0) OBJ File: ''
+>>>>>>> origin/master
 # www.blender.org
 mtllib myBunny.mtl
 o bunny
