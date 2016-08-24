@@ -91,6 +91,7 @@
      */
     var verts = [], vertNormals = [], textures = [], unpacked = {};
     // unpacking stuff
+    unpacked.faces = [];
     unpacked.verts = [];
     unpacked.norms = [];
     unpacked.textures = [];
@@ -179,6 +180,11 @@
 
                  This same process is repeated for verts and textures.
                  */
+                 //face 
+                unpacked.faces.push(vertex[0] - 1);
+                // unpacked.faces.push(+(vertex[0] - 1) * 3 + 1);
+                // unpacked.faces.push(+(vertex[0] - 1) * 3 + 2);
+
                 // vertex position
                 unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
                 unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
@@ -209,6 +215,7 @@
     this.vertexNormals = unpacked.norms;
     this.textures = unpacked.textures;
     this.indices = unpacked.indices;
+    this.faces = unpacked.faces;
   }
 
   var Ajax = function(){

@@ -10,6 +10,7 @@
 <script type="text/javascript" src="js/preglext.js"></script>
 <script type="text/javascript" src="js/seedrandom.js"></script>
 <script type="text/javascript" src="js/webgl-obj-loader.js"></script>
+<script type="text/javascript" src="js/SubD.js"></script>
 <script>                    
 /*     
 SSAO from http://www.john-chapman.net/content.php?id=8 
@@ -37,6 +38,9 @@ window.onload = function() {
 	var fps = 0; 
 	var kernel = [];
 	var model;
+
+
+	var level = 3;
 	
 	function setup() {     
 		var supported = gl.getSupportedExtensions();                  
@@ -54,7 +58,9 @@ window.onload = function() {
 		
 		var objStr = document.getElementById('my_cube.obj').innerHTML;
 		//load obj
-		model = SimpleMesh.loadObj(gl,objStr);
+		rabbit = SimpleMesh.loadObj(gl,objStr);
+
+		model = new subMesh(gl, objStr, level);
 
 
 		ssaoFSQuad = new FullScreenQuad(gl);
@@ -92,8 +98,8 @@ window.onload = function() {
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);						
 		gl.enable(gl.DEPTH_TEST);      
 		
-		var cameraPos = new PreGL.Vec3(4 * Math.cos(time), 0, 4 * Math.sin(time));
-		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 20, cameraPos);
+		var cameraPos = new PreGL.Vec3(4 * Math.cos(time / 20.0), 0, 4 * Math.sin(time / 20.0));
+		var camera = new PerspectiveCamera(45, depthFbo.width/depthFbo.height, 1, 20, cameraPos);
 		
 		PreGLExt.once("camera frustum", function() {
 		   var frustumCorners = camera.getFrustumCorners();
@@ -210,7 +216,7 @@ window.onload = function() {
 		      
 		Math.seedrandom('spheres');        
 		for(var i=0; i<30; i++) {        
-			var scale = 0.25 + Math.random() * 0.25;                         
+			var scale = 1 + Math.random() * 1;                         
 			var x = (Math.random() - 0.5) * 2.0;
 			var y = (Math.random() - 0.5) * 2.0;
 			var z = (Math.random() - 0.5) * 2.0;
@@ -230,26 +236,18 @@ window.onload = function() {
 			shader.set("modelViewMatrix", modelViewMatrix);                                         
 			var normalMatrix = modelViewMatrix.invert().transpose();
 			shader.set("normalMatrix", normalMatrix);
-			sphere.draw(shader);	
+			model.draw(shader);	
 		}  		          
 		
-		var modelViewMatrix = camera.getModelViewMatrix([0, 0, 0.01], null, [3, 3, 3]);			
+		var modelViewMatrix = camera.getModelViewMatrix([1, 0, 0], [Math.PI, 0, 1, 0], [1, 1, 1]);			
 		shader.set("modelViewMatrix", modelViewMatrix);                                         
 		var normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);
 		//plane.draw(shader);	
 
-		model.draw(shader);
+		rabbit.draw(shader);
 
 
-		modelViewMatrix = camera.getModelViewMatrix([0, 0, -0.01], [Math.PI, 0, 1, 0], [3, 1, 1]);			
-
-		
-		modelViewMatrix = camera.getModelViewMatrix([0, 0, -0.01], [Math.PI, 0, 1, 0], [3, 3, 3]);			
-
-		shader.set("modelViewMatrix", modelViewMatrix);                                         
-		normalMatrix = modelViewMatrix.invert().transpose();
-		shader.set("normalMatrix", normalMatrix);   
 		//plane.draw(shader);	
 
 		
