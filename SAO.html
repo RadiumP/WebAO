@@ -50,7 +50,7 @@ window.onload = function() {
 		//renderDepthShader = new Shader(gl, "geoSSAO.vs", "geoSSAO.fs"); 
 
 		//ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
-		ssaoShader = new Shader(gl, "ssao.vert", "hbao.frag");
+		ssaoShader = new Shader(gl, "ssao.vert", "sao.frag");
 
 		//ssaoShader = new Shader(gl, "SSAO.vs", "SSAO.fs");
 
@@ -663,7 +663,7 @@ window.onload = function() {
 
 		//vec3 originVS = (modelViewMatrix * vec4(origin, 1.0)).xyz;
 
-		vec3 originVS = (viewMatrix * vec4(origin, 1.0)).xyz;
+		//vec3 originVS = (viewMatrix * vec4(origin, 1.0)).xyz;
 		return origin;
 		//return originVS;
 	}
@@ -681,7 +681,7 @@ window.onload = function() {
 		float radiusSS = 0.0; // radius of influence in screen space
 		float radiusWS = 0.0; // radius of influence in world space
 		  
-		radiusSS = 0.5;//sample radius
+		radiusSS = 1.0;//sample radius
 
 		 
 	  	vec4 temp0 = viewProjectionInverseMatrix * vec4(0.0, 0.0, -1.0, 1.0);
@@ -746,6 +746,175 @@ window.onload = function() {
   
 	}
 
+
+
+</script>
+
+<script type="glsl" id="sao.frag"> 
+
+// total number of samples at each fragment
+#define NUM_SAMPLES           6
+
+#define NUM_SPIRAL_TURNS      4
+
+
+#define VARIATION             1
+
+#define PI 3.14159265
+
+	uniform sampler2D depthTex;
+	uniform sampler2D noiseTex; 
+	uniform float fov;
+	uniform vec2 noiseScale;
+
+	uniform float near;
+	uniform float far;            
+	
+	uniform float aspectRatio;    
+	uniform vec3 kernel[16];  
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;
+	uniform mat4 viewMatrix;
+
+	uniform mat4 viewProjectionInverseMatrix;
+
+	//modi
+	
+	const float uIntensity = 50.9;
+
+
+
+	const float uSampleRadiusWS = 1.0;
+	const float uBias = 0.1;//
+
+
+	varying vec3 vNormal;
+	varying vec2 vTexCoord;
+
+
+	float unpackDepth(const in vec4 rgba_depth) {
+		const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+		float depth = dot(rgba_depth, bit_shift);
+		return depth;
+	}                
+
+	vec3 getViewRay(vec2 tc) {
+		float hfar = 2.0 * tan(fov/2.0) * far;
+		float wfar = hfar * aspectRatio;    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		return ray;                      
+	}         
+	           
+	//linear view space depth
+	float getDepth(vec2 coord) {                          
+		return unpackDepth(texture2D(depthTex, coord.xy));
+	}   
+
+	vec3 getPositionVS(vec2 uv) {
+		vec3 origin = getDepth(uv) * getViewRay(uv);
+
+		vec3 originVS = (modelViewMatrix * vec4(origin, 1.0)).xyz;
+
+		//vec3 originVS = (viewMatrix * vec4(origin, 1.0)).xyz;
+		return origin;
+		//return originVS;
+	}
+
+// returns a unit vector and a screen-space radius for the tap on a unit disk 
+// (the caller should scale by the actual disk radius)
+vec2 tapLocation(int sampleNumber, float spinAngle, out float radiusSS) {
+  // radius relative to radiusSS
+  float alpha = (float(sampleNumber) + 0.5) * (1.0 / float(NUM_SAMPLES));
+  float angle = alpha * (float(NUM_SPIRAL_TURNS) * 6.28) + spinAngle;
+  
+  radiusSS = alpha;
+  return vec2(cos(angle), sin(angle));
+}
+
+vec3 getOffsetPositionVS(vec2 uv, vec2 unitOffset, float radiusSS) {
+  uv = uv + radiusSS * unitOffset * (1.0 / aspectRatio);
+  
+  return getPositionVS(uv);
+}
+
+float sampleAO(vec2 uv, vec3 positionVS, vec3 normalVS, float sampleRadiusSS, 
+               int tapIndex, float rotationAngle)
+{
+  const float epsilon = 0.01;
+  float radius2 = uSampleRadiusWS * uSampleRadiusWS;
+  
+  // offset on the unit disk, spun for this pixel
+  float radiusSS;
+  vec2 unitOffset = tapLocation(tapIndex, rotationAngle, radiusSS);
+  radiusSS *= sampleRadiusSS;
+  
+  vec3 Q = getOffsetPositionVS(uv, unitOffset, radiusSS);
+  vec3 v = Q - positionVS;
+  
+  float vv = dot(v, v);
+  float vn = dot(v, normalVS) - uBias;
+  
+#if VARIATION == 0
+  
+  // (from the HPG12 paper)
+  // Note large epsilon to avoid overdarkening within cracks
+  return float(vv < radius2) * max(vn / (epsilon + vv), 0.0);
+  
+#elif VARIATION == 1 // default / recommended
+  
+  // Smoother transition to zero (lowers contrast, smoothing out corners). [Recommended]
+  float f = max(radius2 - vv, 0.0) / radius2;
+  return f * f * f * max(vn / (epsilon + vv), 0.0);
+  
+#elif VARIATION == 2
+  
+  // Medium contrast (which looks better at high radii), no division.  Note that the 
+  // contribution still falls off with radius^2, but we've adjusted the rate in a way that is
+  // more computationally efficient and happens to be aesthetically pleasing.
+  float invRadius2 = 1.0 / radius2;
+  return 4.0 * max(1.0 - vv * invRadius2, 0.0) * max(vn, 0.0);
+  
+#else
+  
+  // Low contrast, no division operation
+  return 2.0 * float(vv < radius2) * max(vn, 0.0);
+  
+#endif
+}
+
+void main() {
+
+ vec2 screenPos = vec2(gl_FragCoord.x / 1280.0, gl_FragCoord.y / 960.0);
+ 	//screenPos = vTexCoord;	
+  vec3 originVS = getPositionVS(screenPos);
+  
+
+  vec3 normalVS = vNormal;
+
+  
+  vec3 sampleNoise = texture2D(noiseTex, screenPos * noiseScale).xyz;
+  
+  float randomPatternRotationAngle = 2.0 * PI * sampleNoise.x;
+  
+  float radiusSS  = 0.0; // radius of influence in screen space
+  float radiusWS  = 0.0; // radius of influence in world space
+  float occlusion = 0.0;
+  
+  // TODO (travis): don't hardcode projScale
+  float projScale = 1.0 / (2.0 * tan(fov * 0.5));
+  radiusWS = uSampleRadiusWS;
+  radiusSS = projScale * radiusWS / originVS.y;
+  
+  for (int i = 0; i < NUM_SAMPLES; ++i) {
+    occlusion += sampleAO(screenPos, originVS, normalVS, radiusSS, i, 
+                          randomPatternRotationAngle);
+  }
+  
+  occlusion = 1.0 - occlusion / (4.0 * float(NUM_SAMPLES));
+  occlusion = clamp(pow(occlusion, 1.0 + uIntensity), 0.0, 1.0);
+  gl_FragColor = vec4(occlusion, occlusion, occlusion, 1.0);
+}
 
 
 </script>
