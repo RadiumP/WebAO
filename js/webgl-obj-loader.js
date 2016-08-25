@@ -92,6 +92,7 @@
     var verts = [], vertNormals = [], textures = [], unpacked = {};
     // unpacking stuff
     unpacked.faces = [];
+    unpacked.cp = [];
     unpacked.verts = [];
     unpacked.norms = [];
     unpacked.textures = [];
@@ -216,6 +217,7 @@
     this.textures = unpacked.textures;
     this.indices = unpacked.indices;
     this.faces = unpacked.faces;
+    this.cp = verts;
   }
 
   var Ajax = function(){
