@@ -29,7 +29,7 @@ function pnTess(gl, path, level)
 
 		var tmpIndex = 0;
 		//newIndis.push(tmpIndex);
-		for(var i = 0; i < indices.length / 3.0; i = i + 3)
+		for(var i = 0; i < indices.length; i = i + 3)
 		{	
 			var P1, P2, P3;
 			var N1, N2, N3;
@@ -57,7 +57,7 @@ function pnTess(gl, path, level)
 					utmp = u - m / level;//care
 					vtmp = v + m / level
 					//type 2 inverse
-					if(u != 0.0 || v != 0.0 || w != 0.0)
+					if((utmp - fac) >= 0.0 && (w - fac) >= 0.0)
 					{
 						//position
 						var tempP1 = new PreGL.Vec3(0,0,0);
