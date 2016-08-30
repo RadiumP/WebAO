@@ -111,7 +111,7 @@ function pnTess(gl, path, level)
 
 			//w32 = dot( p2 - p3, n3 );
 			P2 = P2.sub2(P2, P3);
-			var w32 = P3.dot(N3);
+			var w32 = P2.dot(N3);
 			P2.setVec3(tempP2);
 			N3.setVec3(tempON3);
 
@@ -180,7 +180,7 @@ function pnTess(gl, path, level)
 			vv.scale( 1 / 3.0);
 
 			var b111 = new PreGL.Vec3(0,0,0);
-			b111.setVec3(ee);
+			
 			b111.sub2(ee, vv);
 			b111.scale(1 / 2.0);
 			b111.add2(b111, ee);
@@ -209,7 +209,49 @@ function pnTess(gl, path, level)
 			n020.setVec3(N2);
 			n002.setVec3(N3);
 
+			var v12, v23, v31;
+			var tmpUp = new PreGL.Vec3(0,0,0);
+			var tmpDown = new PreGL.Vec3(0,0,0);
 
+			tmpUp.sub2(P2, P1);
+			tmpDown.sub2(P2, P1);
+			
+			v12 = 2.0 * tmpUp.dot(N1.add2(N1, N2)) / tmpDown.dot(tmpDown);
+			N1.setVec3(tempON1);
+
+			tmpUp.sub2(P3, P2);
+			tmpDown.sub2(P3, P2);
+			
+			v23 = 2.0 * tmpUp.dot(N2.add2(N2, N3)) / tmpDown.dot(tmpDown);
+			N2.setVec3(tempON2);
+
+			tmpUp.sub2(P1, P3);
+			tmpDown.sub2(P1, P3);
+			
+			v31 = 2.0 * tmpUp.dot(N3.add2(N3, N1)) / tmpDown.dot(tmpDown);
+			N3.setVec3(tempON3);
+
+			
+			n110.sub2(P2, P1);
+			n110.sub2(N2, n110.scale(v12));
+			n110.add2(N1, n110);
+
+			n011.sub2(P3, P2);
+			n011.sub2(N2, n011.scale(v23));
+			n011.add2(N3, n011);
+
+			n101.sub2(P1, P3);
+			n101.sub2(N1, n101.scale(v31));
+			n101.add2(N3, n101);
+
+			nPatch.push(n200);
+			nPatch.push(n020);
+			nPatch.push(n002);
+			nPatch.push(n110);
+			nPatch.push(n011);
+			nPatch.push(n101);
+			
+			
 			
             // float v12 = 2. * dot( p2-p1, n1+n2 ) / dot( p2-p1, p2-p1 );
             // float v23 = 2. * dot( p3-p2, n2+n3 ) / dot( p3-p2, p3-p2 );
@@ -298,7 +340,8 @@ function pnTess(gl, path, level)
 						//normal
 					
 
-						var tempN4 = new PreGL.Vec3(0,0,0);//N1 * utmp + N2 * vtmp + N3 * w);	
+						var tempN4 = new PreGL.Vec3(0,0,0);//N1 * utmp + N2 * vtmp + N3 * w;
+						tempN4.setVec3(getNorm(utmp, vtmp, w, nPatch));	
 						// tempN4.setVec3(N1.scale(utmp));
 						// tempN4.add2(tempN4, N2.scale(vtmp));
 						// tempN4.add2(tempN4, N3.scale(w));	
@@ -307,7 +350,8 @@ function pnTess(gl, path, level)
 						// N2.setVec3(tempON2);
 						// N3.setVec3(tempON3);	
 										
-						// var tempN6 = new PreGL.Vec3(0,0,0);//N1 * (utmp - fac) + N2 * (vtmp + fac) + N3 * w);
+						var tempN6 = new PreGL.Vec3(0,0,0);//N1 * (utmp - fac) + N2 * (vtmp + fac) + N3 * w);
+						tempN6.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
 						// tempN6.setVec3(N1.scale(utmp - fac));
 						// tempN6.add2(tempN6, N2.scale(vtmp + fac));
 						// tempN6.add2(tempN6, N3.scale(w));	
@@ -316,8 +360,8 @@ function pnTess(gl, path, level)
 						// N2.setVec3(tempON2);
 						// N3.setVec3(tempON3);	
 
-						// var tempN5 = new PreGL.Vec3(0,0,0);//N1 * utmp  + N2 * (vtmp - fac) + N3 * (w + fac));
-
+						var tempN5 = new PreGL.Vec3(0,0,0);//N1 * utmp  + N2 * (vtmp + fac) + N3 * (w - fac));
+						tempN5.setVec3(getNorm(utmp, vtmp + fac, w - fac, nPatch));
 						// tempN5.setVec3(N1.scale(utmp));
 						// tempN5.add2(tempN5, N2.scale(vtmp - fac));
 						// tempN5.add2(tempN5, N3.scale(w + fac));
@@ -383,51 +427,54 @@ function pnTess(gl, path, level)
 
 
 					//normal
-					var tempON1 = new PreGL.Vec3(0,0,0);
-					var tempON2 = new PreGL.Vec3(0,0,0);
-					var tempON3 = new PreGL.Vec3(0,0,0);
+					// var tempON1 = new PreGL.Vec3(0,0,0);
+					// var tempON2 = new PreGL.Vec3(0,0,0);
+					// var tempON3 = new PreGL.Vec3(0,0,0);
 
-					tempON1.setVec3(N1);
-					tempON2.setVec3(N2);
-					tempON3.setVec3(N3);
+					// tempON1.setVec3(N1);
+					// tempON2.setVec3(N2);
+					// tempON3.setVec3(N3);
 
 					var tempN1 = new PreGL.Vec3(0,0,0);//var tempN1 = new PreGL.Vec3(P1 * utmp + P2 * vtmp + P3 * w);	
-					tempN1.setVec3(N1.scale(utmp));
-					tempN1.add2(tempN1, N2.scale(vtmp));
-					tempN1.add2(tempN1, N3.scale(w));	
+					tempN1.setVec3(getNorm(utmp, vtmp, w, nPatch));
 
-					N1.setVec3(tempON1);
-					N2.setVec3(tempON2);
-					N3.setVec3(tempON3);	
+					// tempN1.setVec3(N1.scale(utmp));
+					// tempN1.add2(tempN1, N2.scale(vtmp));
+					// tempN1.add2(tempN1, N3.scale(w));	
+
+					// N1.setVec3(tempON1);
+					// N2.setVec3(tempON2);
+					// N3.setVec3(tempON3);	
 									
 					var tempN2 = new PreGL.Vec3(0,0,0);//var tempN2 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
-					tempN2.setVec3(N1.scale(utmp - fac));
-					tempN2.add2(tempN2, N2.scale(vtmp + fac));
-					tempN2.add2(tempN2, N3.scale(w));	
+					tempN2.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
+					// tempN2.setVec3(N1.scale(utmp - fac));
+					// tempN2.add2(tempN2, N2.scale(vtmp + fac));
+					// tempN2.add2(tempN2, N3.scale(w));	
 
-					N1.setVec3(tempON1);
-					N2.setVec3(tempON2);
-					N3.setVec3(tempON3);	
+					// N1.setVec3(tempON1);
+					// N2.setVec3(tempON2);
+					// N3.setVec3(tempON3);	
 
 					var tempN3 = new PreGL.Vec3(0,0,0);//var tempN3 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * vtmp + P3 * (w + fac));
-
-					tempN3.setVec3(N1.scale(utmp - fac));
-					tempN3.add2(tempN3, N2.scale(vtmp));
-					tempN3.add2(tempN3, N3.scale(w + fac));
+					tempN3.setVec3(getNorm(utmp - fac, vtmp, w + fac, nPatch));
+					// tempN3.setVec3(N1.scale(utmp - fac));
+					// tempN3.add2(tempN3, N2.scale(vtmp));
+					// tempN3.add2(tempN3, N3.scale(w + fac));
 					
 					newNorms.push(tempN1.x);
 					newNorms.push(tempN1.y);
 					newNorms.push(tempN1.z);
 					
+					
 					newNorms.push(tempN2.x);
 					newNorms.push(tempN2.y);
 					newNorms.push(tempN2.z);
-					
+
 					newNorms.push(tempN3.x);
 					newNorms.push(tempN3.y);
 					newNorms.push(tempN3.z);
-
-
+					
 								
 					
 					
@@ -503,7 +550,7 @@ function getPos(u, v, w, bpatch)
 	return xyz;
 }
 
-function getNorm(u, w, npatch)
+function getNorm(u, v, w, npatch)
 {
 	var norm = new PreGL.Vec3(0,0,0);
 	var tmpN200 = new PreGL.Vec3(0,0,0);

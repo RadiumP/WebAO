@@ -11,6 +11,7 @@
 <script type="text/javascript" src="js/seedrandom.js"></script>
 <script type="text/javascript" src="js/webgl-obj-loader.js"></script>
 <script type="text/javascript" src="js/SubD.js"></script>
+<script type="text/javascript" src="js/pnTess.js"></script>
 <script>                    
 /*     
 SSAO from http://www.john-chapman.net/content.php?id=8 
@@ -40,7 +41,7 @@ window.onload = function() {
 	var model;
 
 
-	var level = 3;
+	var level = 1;
 	
 	function setup() {     
 		var supported = gl.getSupportedExtensions();                  
@@ -59,8 +60,9 @@ window.onload = function() {
 		var objStr = document.getElementById('my_cube.obj').innerHTML;
 		//load obj
 		rabbit = SimpleMesh.loadObj(gl,objStr);
+		pnTest = new pnTess(gl, objStr, level);
 
-		model = new subMesh(gl, objStr, level);
+		//model = new subMesh(gl, objStr, level);
 
 
 		ssaoFSQuad = new FullScreenQuad(gl);
@@ -236,7 +238,7 @@ window.onload = function() {
 			shader.set("modelViewMatrix", modelViewMatrix);                                         
 			var normalMatrix = modelViewMatrix.invert().transpose();
 			shader.set("normalMatrix", normalMatrix);
-			model.draw(shader);	
+			//model.draw(shader);	
 		}  		          
 		
 		var modelViewMatrix = camera.getModelViewMatrix([1, 0, 0], [Math.PI, 0, 1, 0], [1, 1, 1]);			
@@ -245,10 +247,9 @@ window.onload = function() {
 		shader.set("normalMatrix", normalMatrix);
 		//plane.draw(shader);	
 
-		rabbit.draw(shader);
+		//rabbit.draw(shader);
 
-
-		//plane.draw(shader);	
+		pnTest.draw(shader);
 
 		
 	}

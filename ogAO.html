@@ -11,7 +11,7 @@
 <script type="text/javascript" src="js/seedrandom.js"></script>
 <script type="text/javascript" src="js/webgl-obj-loader.js"></script>
 <script type="text/javascript" src="js/SubD.js"></script>
-<script type="text/javascript" src="js/pnTess.js"></script>
+<script type="text/javascript" src="js/pnTess1.js"></script>
 <script> 
 
 
@@ -40,7 +40,7 @@ window.onload = function() {
 
 	var pnTest;
 
-	var level = 1;
+	var level = 0;
 
 
 	function setup() { 
@@ -70,7 +70,7 @@ window.onload = function() {
 		model = new subMesh(gl,sub, level);
 		luffy = SimpleMesh.loadObj(gl, luf);
 
-		pnTest = new pnTess(gl, sub, level)
+		pnTest = new pnTess(gl, sub, level);
 
 		//pnTest = new subMesh(gl,sub, level);
 
@@ -205,7 +205,7 @@ window.onload = function() {
 			var normalMatrix = modelViewMatrix.invert().transpose();
 			shader.set("normalMatrix", normalMatrix);
 			//sphere.draw(shader);	
-			model.draw(shader);
+			//model.draw(shader);
 		}  		          
 
 
