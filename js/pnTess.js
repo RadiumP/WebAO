@@ -133,8 +133,8 @@ function pnTess(gl, path, level)
 
 			//b021 = ( 2.*p2 + p3 - w23*n2 ) / 3.;
 			b021.setVec3(P2.scale(2.0));
-			b021.sub2(b012, N2.scale(w23));
-			b021.add2(b012, P3);
+			b021.sub2(b021, N2.scale(w23));
+			b021.add2(b021, P3);
 			b021.scale(1 / 3.0);
 			P2.setVec3(tempP2);
 			N2.setVec3(tempON2);
