@@ -42,6 +42,10 @@ function pnTess(gl, path, level)
 			N2 = new PreGL.Vec3(norms[3 * (i + 1)], norms[3 * (i + 1) + 1], norms[3 * (i + 1) + 2]);
 			N3 = new PreGL.Vec3(norms[3 * (i + 2)], norms[3 * (i + 2) + 1], norms[3 * (i + 2) + 2]);
 
+			//uvw hash
+			uvwHash = [];
+			
+
 
 			//position
 			var tempP1 = new PreGL.Vec3(0,0,0);
@@ -235,14 +239,17 @@ function pnTess(gl, path, level)
 			n110.sub2(P2, P1);
 			n110.sub2(N2, n110.scale(v12));
 			n110.add2(N1, n110);
+			n110.normalize();
 
 			n011.sub2(P3, P2);
 			n011.sub2(N2, n011.scale(v23));
 			n011.add2(N3, n011);
+			n011.normalize();
 
 			n101.sub2(P1, P3);
 			n101.sub2(N1, n101.scale(v31));
 			n101.add2(N3, n101);
+			n101.normalize();
 
 			nPatch.push(n200);
 			nPatch.push(n020);
@@ -253,15 +260,6 @@ function pnTess(gl, path, level)
 			
 			
 			
-            // float v12 = 2. * dot( p2-p1, n1+n2 ) / dot( p2-p1, p2-p1 );
-            // float v23 = 2. * dot( p3-p2, n2+n3 ) / dot( p3-p2, p3-p2 );
-            // float v31 = 2. * dot( p1-p3, n3+n1 ) / dot( p1-p3, p1-p3 );
-            // vec3 n200 = n1;
-            // vec3 n020 = n2;
-            // vec3 n002 = n3;
-            // vec3 n110 = normalize( n1 + n2 - v12*(p2-p1) );
-            // vec3 n011 = normalize( n2 + n3 - v23*(p3-p2) );
-            // vec3 n101 = normalize( n3 + n1 - v31*(p1-p3) );
 
 
 			// In each triangle gen new verts
@@ -280,43 +278,23 @@ function pnTess(gl, path, level)
 					//type 2 inverse
 					if((utmp - fac) >= 0.0 && (w - fac) >= 0.0)
 					{
+						var uvw = new PreGL.Vec3(utmp, vtmp, w);
 						
-
-
+						
 
 						var temp4 = new PreGL.Vec3(0,0,0); 
 						temp4.setVec3(getPos(utmp, vtmp, w, bPatch));
-						// temp4.setVec3(P1.scale(utmp));
-						// temp4.add2(temp4, P2.scale(vtmp));
-						// temp4.add2(temp4, P3.scale(w));		
-
-						// P1.setVec3(tempP1);
-						// P2.setVec3(tempP2);
-						// P3.setVec3(tempP3);
-						// // var temp6 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
-						// // var temp5 = new PreGL.Vec3(P1 * utmp  + P2 * (vtmp - fac) + P3 * (w + fac));
+						
 
 
 						var temp6 = new PreGL.Vec3(0,0,0); 
 						temp6.setVec3(getPos(utmp - fac, vtmp + fac, w, bPatch));
 
-						// temp6.setVec3(P1.scale(utmp - fac));
-						// temp6.add2(temp6, P2.scale(vtmp + fac));
-						// temp6.add2(temp6, P3.scale(w));	
-
-						// P1.setVec3(tempP1);
-						// P2.setVec3(tempP2);
-						// P3.setVec3(tempP3);
+						
 
 						var temp5 = new PreGL.Vec3(0,0,0); 
 						temp5.setVec3(getPos(utmp, vtmp + fac, w - fac, bPatch));
-						// temp5.setVec3(P1.scale(utmp));
-						// temp5.add2(temp5, P2.scale(vtmp + fac));
-						// temp5.add2(temp5, P3.scale(w - fac));	
-
-						// P1.setVec3(tempP1);
-						// P2.setVec3(tempP2);
-						// P3.setVec3(tempP3);
+						
 
 						
 						newVerts.push(temp4.x);

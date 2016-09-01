@@ -40,7 +40,7 @@ window.onload = function() {
 
 	var pnTest;
 
-	var level = 4;
+	var level = 2;
 
 
 	function setup() { 
@@ -216,7 +216,7 @@ window.onload = function() {
 			
 		//rabbit.draw(shader);
 
-		pnTest.draw(shader);
+		pnTest.draw(shader,gl.LINE_STRIP);
 		
 
 		modelViewMatrix = camera.getModelViewMatrix([-100, 0, 0], [0, 0, 1, 0], [1, 1, 1]);			

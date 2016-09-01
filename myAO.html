@@ -42,7 +42,7 @@ window.onload = function() {
 		renderDepthShader = new Shader(gl, "showDepth.vert", "showDepth.frag");  
 		ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
 
-		var objStr = document.getElementById('my_cube.obj').innerHTML;
+		var objStr = document.getElementById('t.obj').innerHTML;
 		//load obj
 		model = SimpleMesh.loadObj(gl,objStr);
 
@@ -317,6 +317,31 @@ window.onload = function() {
 	}
 </script>  
 
+<script type="text/plain" id="t.obj">
+# Blender v2.77 (sub 0) OBJ File: ''
+# www.blender.org
+mtllib untitled.mtl
+o new_1
+v 0.000000 1.000000 0.000000
+v 0.000000 0.000000 0.000000
+v 0.000000 -0.000000 1.000000
+v 1.000000 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vn -1.000000 0.000000 0.000000
+vn 0.000000 0.000000 -1.000000
+vn 0.577400 0.577400 0.577400
+vn 0.000000 -1.000000 -0.000000
+usemtl None
+s 1
+f 1/1/1 2/2/1 3/3/1
+f 2/2/2 1/1/2 4/4/2
+f 3/3/3 4/4/3 1/1/3
+f 4/4/4 3/3/4 2/2/4
+
+</script>
 
 <script type="text/plain" id="my_cube.obj">
 # Blender v2.77 (sub 0) OBJ File: ''

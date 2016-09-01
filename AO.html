@@ -11,7 +11,7 @@
 <script type="text/javascript" src="js/seedrandom.js"></script>
 <script type="text/javascript" src="js/webgl-obj-loader.js"></script>
 <script type="text/javascript" src="js/SubD.js"></script>
-<script type="text/javascript" src="js/pnTess1.js"></script>
+<script type="text/javascript" src="js/pnTess.js"></script>
 <script>                    
 /*     
 SSAO from http://www.john-chapman.net/content.php?id=8 
@@ -41,7 +41,7 @@ window.onload = function() {
 	var model;
 
 
-	var level = 1;
+	var level = 2;
 	
 	function setup() {     
 		var supported = gl.getSupportedExtensions();                  
@@ -57,7 +57,7 @@ window.onload = function() {
 		sphere = SimpleMesh.buildSphere(gl, 1);	 
 		plane = SimpleMesh.buildPlaneXY(gl, 1, 1);   
 		
-		var objStr = document.getElementById('my_cube.obj').innerHTML;
+		var objStr = document.getElementById('t.obj').innerHTML;
 		//load obj
 		rabbit = SimpleMesh.loadObj(gl,objStr);
 		pnTest = new pnTess(gl, objStr, level);
@@ -139,62 +139,7 @@ window.onload = function() {
 		ssaoFbo.unbind(); 
 
 
-		//  //HBAO
-
-		//  ssaoFbo.bind(); 
-
-		//  gl.clearColor(0, 0, 0, 1);
-		//  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		//  gl.viewport(0, 0, ssaoFbo.width, ssaoFbo.height);
-		//  hbaoShader.use();
-		//  hbaoShader.set("depthTex", 0);    
-		//  hbaoShader.set("noiseTex", 1);
-
-		// //HBAO
-		// hbaoShader.use();
-		// hbaoShader.set("depthTex", 0);    
-		// hbaoShader.set("noiseTex", 1);
 		
-		
-		// var fov = camera.fov / 180*Math.PI;
-		// var FocalLen = [1.0 / Math.tan(fov * 0.5) * camera.aspectRatio, 1.0 / Math.tan(fov * 0.5)];
-		// var UVToViewA = [-2.0 / FocalLen[0], -2.0 / FocalLen[1]];
-		// var UVToViewB = [1.0 / FocalLen[0], 1.0 / FocalLen[1]];
-		// hbaoShader.set("FocalLen", FocalLen); 
-		// hbaoShader.set("UVToViewB", UVToViewB);
-		// hbaoShader.set("UVToViewA", UVToViewA);
-
-		// gl.activeTexture(gl.TEXTURE0);
-		// gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);    
-		// gl.activeTexture(gl.TEXTURE1);            
-		// gl.bindTexture(gl.TEXTURE_2D, noiseTexture); 
-
-		// renderScene(camera, hbaoShader, time);
-
-		//gl.activeTexture(gl.TEXTURE0);  
-		//ssaoFbo.unbind(); 
-
-		
-		// var fov = camera.fov / 180*Math.PI;
-		// var FocalLen = [1.0 / Math.tan(fov * 0.5) * camera.aspectRatio, 1.0 / Math.tan(fov * 0.5)];
-		// var UVToViewA = [-2.0 / FocalLen[0], -2.0 / FocalLen[1]];
-		// var UVToViewB = [1.0 / FocalLen[0], 1.0 / FocalLen[1]];
-		// hbaoShader.set("FocalLen", FocalLen); 
-		// hbaoShader.set("UVToViewB", UVToViewB);
-		// hbaoShader.set("UVToViewA", UVToViewA);
-
-		// gl.activeTexture(gl.TEXTURE0);
-		// gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);    
-		// gl.activeTexture(gl.TEXTURE1);            
-		// gl.bindTexture(gl.TEXTURE_2D, noiseTexture); 
-
-		// // // //renderScene(camera, ssaoShader, time);
-		// renderScene(camera, hbaoShader, time);
-		
-		// gl.activeTexture(gl.TEXTURE0);  
-		// ssaoFbo.unbind(); 
-
-
 		//blur	 
 		blurShader.use();           			
 		blurShader.set("colorTex", 0);    
@@ -247,9 +192,9 @@ window.onload = function() {
 		shader.set("normalMatrix", normalMatrix);
 		//plane.draw(shader);	
 
-		//rabbit.draw(shader);
+		//rabbit.draw(shader, gl.LINE_STRIP);
 
-		pnTest.draw(shader);
+		pnTest.draw(shader, gl.LINE_STRIP);
 
 		
 	}
@@ -815,6 +760,51 @@ window.onload = function() {
 		gl_FragColor.rgb = vec3(result * 0.0625); 
 		gl_FragColor.a = 1.0;
 	}
+</script>
+
+<script type="text/plain" id="tri.obj">
+	# Blender v2.77 (sub 0) OBJ File: ''
+	# www.blender.org
+	mtllib untitled.mtl
+o new_1
+v 0.000000 1.000000 0.000000
+v 0.000000 0.000000 0.000000
+v 0.000000 -0.000000 1.000000
+
+
+
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+
+f 1/1/1 2/2/1 3/3/1
+
+</script>
+
+<script type="text/plain" id="t.obj">
+# Blender v2.77 (sub 0) OBJ File: ''
+# www.blender.org
+mtllib untitled.mtl
+o new_1
+v 0.000000 1.000000 0.000000
+v 0.000000 0.000000 0.000000
+v 0.000000 -0.000000 1.000000
+v 1.000000 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 0.000000
+vn -1.000000 0.000000 0.000000
+vn 0.000000 0.000000 -1.000000
+vn 0.577400 0.577400 0.577400
+vn 0.000000 -1.000000 -0.000000
+usemtl None
+s 1
+f 1/1/1 2/2/1 3/3/1
+f 2/2/2 1/1/2 4/4/2
+f 3/3/3 4/4/3 1/1/3
+f 4/4/4 3/3/4 2/2/4
+
 </script>
 
 <script type="text/plain" id="my_cube.obj">
