@@ -199,11 +199,12 @@
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
-                // add the newly created vertex to the list of indices
-                unpacked.hashindices[elements[j]] = unpacked.index;
-                unpacked.indices.push(unpacked.index);
-                // increment the counter
-                unpacked.index += 1;
+                // // add the newly created vertex to the list of indices
+                // unpacked.hashindices[elements[j]] = unpacked.index;
+                // unpacked.indices.push(unpacked.index);
+                // // increment the counter
+                // unpacked.index += 1;
+                unpacked.indices.push(vertex[0] - 1);
             }
             if(j === 3 && quad) {
                 // add v0/t0/vn0 onto the second triangle
@@ -212,8 +213,17 @@
         }
       }
     }
-    this.vertices = unpacked.verts;
-    this.vertexNormals = unpacked.norms;
+
+    var v = [];  
+    for(var i = 0; i < verts.length; i++)
+    {
+      v.push(+verts[i]);
+    }
+    
+    //this.vertices = verts;
+    //this.vertexNormals = unpacked.norms;
+    this.vertices = v;
+    this.vertexNormals = vertNormals;
     this.textures = unpacked.textures;
     this.indices = unpacked.indices;
     this.faces = unpacked.faces;

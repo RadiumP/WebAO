@@ -13,10 +13,76 @@ function pnTess(gl, path, level)
 	var texCoord = mesh.textures;
 	var indices = mesh.indices;
 
+
+
+	var nbseen = new Array(verts.length);
+	nbseen.fill(0);
+    var avgNormals = new Array(verts.length);
+    
+    for(var i = 0; i < indices.length; i += 3)
+    {
+       var ia = indices[i];
+       var ib = indices[i + 1];
+       var ic = indices[i + 2];
+
+       var normal = new PreGL.Vec3(0, 0, 0);
+       var vertA = new PreGL.Vec3(verts[ia * 3], verts[ia * 3 + 1], verts[ia * 3 + 2]);
+       var vertB = new PreGL.Vec3(verts[ib * 3], verts[ib * 3 + 1], verts[ib * 3 + 2]);
+       var vertC = new PreGL.Vec3(verts[ic * 3], verts[ic * 3 + 1], verts[ic * 3 + 2]);
+
+       var edge1 = new PreGL.Vec3();
+       var edge2 = new PreGL.Vec3();
+       edge1.sub2(vertB, vertA);
+       edge2.sub2(vertC, vertA);
+       normal.cross2(edge1, edge2);
+       normal.normalize();
+
+       var v = new Array(3);
+       v[0] = ia;
+       v[1] = ib;
+       v[2] = ic;
+
+
+       for(var j = 0; j < 3; j++)
+       {
+       		var cur_v = v[j];
+       		++nbseen[cur_v];
+       		if(nbseen[cur_v] === 1)
+       		{
+       			avgNormals[cur_v * 3] = normal.x;
+       			avgNormals[cur_v * 3 + 1] = normal.y;
+       			avgNormals[cur_v * 3 + 2] = normal.z;
+
+       		}
+
+       		else
+       		{
+       			avgNormals[cur_v * 3] = avgNormals[cur_v * 3] * (1.0 - 1,0 / nbseen[cur_v]) + normal.x * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 1] = avgNormals[cur_v * 3 + 1] * (1.0 - 1,0 / nbseen[cur_v]) + normal.y * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 2] = avgNormals[cur_v * 3 + 2] * (1.0 - 1,0 / nbseen[cur_v]) + normal.z * 1.0 / nbseen[cur_v];
+       			var tmpAvg = new PreGL.Vec3(avgNormals[cur_v * 3], avgNormals[cur_v * 3 + 1], avgNormals[cur_v * 3 + 2]);
+       			tmpAvg.normalize();
+
+       			avgNormals[cur_v * 3] = tmpAvg.x;
+       			avgNormals[cur_v * 3 + 1] = tmpAvg.y;
+       			avgNormals[cur_v * 3 + 2] = tmpAvg.z;
+
+       		}
+       }
+
+
+    }
+
+    var norms = avgNormals;
+
+
+
+
+
 	if(level === 0)
 	{
 		model.addAttrib("position", mesh.vertices);
-  		model.addAttrib("normal", mesh.vertexNormals);
+  		model.addAttrib("normal", norms);
   		model.addAttrib("texCoord", mesh.textures, 2);
   		model.setIndices(mesh.indices);
 
@@ -34,13 +100,14 @@ function pnTess(gl, path, level)
 			var P1, P2, P3;
 			var N1, N2, N3;
 			
-			P1 = new PreGL.Vec3(verts[3 * i], verts[3 * i + 1], verts[3 * i + 2]);
-			P2 = new PreGL.Vec3(verts[3 * (i + 1)], verts[3 * (i + 1) + 1], verts[3 * (i + 1) + 2]);
-			P3 = new PreGL.Vec3(verts[3 * (i + 2)], verts[3 * (i + 2) + 1], verts[3 * (i + 2) + 2]);
+			P1 = new PreGL.Vec3(verts[3 * indices[ i ]], verts[3 * indices[i] + 1], verts[3 * indices[i] + 2]);
+			P2 = new PreGL.Vec3(verts[3 * indices[ i + 1 ]], verts[3 * indices[ i + 1 ] + 1], verts[3 * indices[ i + 1 ] + 2]);
+			P3 = new PreGL.Vec3(verts[3 * indices[ i + 2 ]], verts[3 * indices[ i + 2 ] + 1], verts[3 * indices[ i + 2 ] + 2]);
 
-			N1 = new PreGL.Vec3(norms[3 * i], norms[3 * i + 1], norms[3 * i + 2]);
-			N2 = new PreGL.Vec3(norms[3 * (i + 1)], norms[3 * (i + 1) + 1], norms[3 * (i + 1) + 2]);
-			N3 = new PreGL.Vec3(norms[3 * (i + 2)], norms[3 * (i + 2) + 1], norms[3 * (i + 2) + 2]);
+
+			N1 = new PreGL.Vec3(norms[3 * indices[ i ]], norms[3 * indices[ i ] + 1], norms[3 * indices[ i ] + 2]);
+			N2 = new PreGL.Vec3(norms[3 * indices[ i + 1 ]], norms[3 * indices[ i + 1 ] + 1], norms[3 * indices[ i + 1 ] + 2]);
+			N3 = new PreGL.Vec3(norms[3 * indices[ i + 2 ]], norms[3 * indices[ i + 2 ] + 1], norms[3 * indices[ i + 2 ] + 2]);
 
 			//uvw hash
 			uvwHash = [];
@@ -84,7 +151,7 @@ function pnTess(gl, path, level)
 			b003.setVec3(tempP3);
 			
 			//w12 = dot( p2 - p1, n1 );
-			P2 = P2.sub2(P2,  P1);
+			P2.sub2(P2,  P1);
 			var w12 = P2.dot(N1); 
 			P2.setVec3(tempP2);
 			N1.setVec3(tempON1);
