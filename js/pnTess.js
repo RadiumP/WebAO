@@ -1,5 +1,6 @@
 function pnTess(gl, path, level)
 {
+	var i = 0;
 	var newVerts = [];//new Float32Array(3*65000);
 	var newNorms = [];//new Float32Array(3*65000);
 	var newIndis = [];//0.0;
