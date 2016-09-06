@@ -1,6 +1,10 @@
 function pnTess(gl, path, level)
 {
-	var data = [];
+	
+	var newVerts = [];//new Float32Array(3*65000);
+	var newNorms = [];//new Float32Array(3*65000);
+	var newIndis = [];//0.0;
+
 	var model = new SimpleMesh(gl);
 
 	var mesh = new OBJ.Mesh(path);
@@ -10,120 +14,84 @@ function pnTess(gl, path, level)
 	var texCoord = mesh.textures;
 	var indices = mesh.indices;
 
+
+
+	var nbseen = new Array(verts.length);
+	nbseen.fill(0);
+    var avgNormals = new Array(verts.length);
+    
+    for(var i = 0; i < indices.length; i += 3)
+    {
+       var ia = indices[i];
+       var ib = indices[i + 1];
+       var ic = indices[i + 2];
+
+       var normal = new PreGL.Vec3(0, 0, 0);
+       var vertA = new PreGL.Vec3(verts[ia * 3], verts[ia * 3 + 1], verts[ia * 3 + 2]);
+       var vertB = new PreGL.Vec3(verts[ib * 3], verts[ib * 3 + 1], verts[ib * 3 + 2]);
+       var vertC = new PreGL.Vec3(verts[ic * 3], verts[ic * 3 + 1], verts[ic * 3 + 2]);
+
+       var edge1 = new PreGL.Vec3();
+       var edge2 = new PreGL.Vec3();
+       edge1.sub2(vertB, vertA);
+       edge2.sub2(vertC, vertA);
+       normal.cross2(edge1, edge2);
+       normal.normalize();
+
+       var v = new Array(3);
+       v[0] = ia;
+       v[1] = ib;
+       v[2] = ic;
+
+
+       for(var j = 0; j < 3; j++)
+       {
+       		var cur_v = v[j];
+       		++nbseen[cur_v];
+       		if(nbseen[cur_v] === 1)
+       		{
+       			avgNormals[cur_v * 3] = normal.x;
+       			avgNormals[cur_v * 3 + 1] = normal.y;
+       			avgNormals[cur_v * 3 + 2] = normal.z;
+
+       		}
+
+       		else
+       		{
+       			avgNormals[cur_v * 3] = avgNormals[cur_v * 3] * (1.0 - 1,0 / nbseen[cur_v]) + normal.x * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 1] = avgNormals[cur_v * 3 + 1] * (1.0 - 1,0 / nbseen[cur_v]) + normal.y * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 2] = avgNormals[cur_v * 3 + 2] * (1.0 - 1,0 / nbseen[cur_v]) + normal.z * 1.0 / nbseen[cur_v];
+       			var tmpAvg = new PreGL.Vec3(avgNormals[cur_v * 3], avgNormals[cur_v * 3 + 1], avgNormals[cur_v * 3 + 2]);
+       			tmpAvg.normalize();
+
+       			avgNormals[cur_v * 3] = tmpAvg.x;
+       			avgNormals[cur_v * 3 + 1] = tmpAvg.y;
+       			avgNormals[cur_v * 3 + 2] = tmpAvg.z;
+
+       		}
+       }
+
+
+    }
+
+    var norms = avgNormals;
+
+
+
+
+
 	if(level === 0)
 	{
-
 		model.addAttrib("position", mesh.vertices);
-  		model.addAttrib("normal", mesh.vertexNormals);
+  		model.addAttrib("normal", norms);
   		model.addAttrib("texCoord", mesh.textures, 2);
   		model.setIndices(mesh.indices);
 
   		
 	}
 	else
-	{	
-
-  		data.push(model);
-  		data.push(verts);
-  		data.push(norms);
-  		data.push(indices);
-  		
-		for(var i = 0; i< level; i++){
-			data = calVerts(data, i);
-		}
-	}
-
-	return data[0];
-
-	
-
-
-}
-
-
-function getPos(u, v, w, bpatch)
-{
-	var xyz = new PreGL.Vec3(0,0,0);
-	var tmpB300 = new PreGL.Vec3(0,0,0);
-	var tmpB030 = new PreGL.Vec3(0,0,0);
-	var tmpB003 = new PreGL.Vec3(0,0,0);
-	var tmpB210 = new PreGL.Vec3(0,0,0);
-	var tmpB120 = new PreGL.Vec3(0,0,0);
-	var tmpB201 = new PreGL.Vec3(0,0,0);
-	var tmpB021 = new PreGL.Vec3(0,0,0);
-	var tmpB102 = new PreGL.Vec3(0,0,0);
-	var tmpB012 = new PreGL.Vec3(0,0,0);
-	var tmpB111 = new PreGL.Vec3(0,0,0);
-
-	tmpB300.setVec3(bpatch[0]);
-	tmpB030.setVec3(bpatch[1]);
-	tmpB003.setVec3(bpatch[2]);
-	tmpB210.setVec3(bpatch[3]);
-	tmpB120.setVec3(bpatch[4]);
-	tmpB201.setVec3(bpatch[5]);
-	tmpB021.setVec3(bpatch[6]);
-	tmpB102.setVec3(bpatch[7]);
-	tmpB012.setVec3(bpatch[8]);
-	tmpB111.setVec3(bpatch[9]);
-
-	xyz.setVec3(tmpB300.scale( w*w*w ));
-	xyz.add2(xyz, tmpB030.scale( u*u*u ));
-	xyz.add2(xyz, tmpB003.scale( v*v*v ));
-	xyz.add2(xyz, tmpB210.scale( 3.0*u*w*w ));
-	xyz.add2(xyz, tmpB120.scale( 3.0*u*u*w ));
-	xyz.add2(xyz, tmpB201.scale( 3.0*v*w*w ));
-	xyz.add2(xyz, tmpB021.scale( 3.0*u*u*v ));
-	xyz.add2(xyz, tmpB102.scale( 3.0*v*v*w ));
-	xyz.add2(xyz, tmpB012.scale( 3.0*u*v*v ));
-	xyz.add2(xyz, tmpB111.scale( 6.0*u*v*w ));
-
-	return xyz;
-}
-
-function getNorm(u, v, w, npatch)
-{
-	var norm = new PreGL.Vec3(0,0,0);
-	var tmpN200 = new PreGL.Vec3(0,0,0);
-	var tmpN020 = new PreGL.Vec3(0,0,0);
-	var tmpN002 = new PreGL.Vec3(0,0,0);
-	var tmpN110 = new PreGL.Vec3(0,0,0);
-	var tmpN011 = new PreGL.Vec3(0,0,0);
-	var tmpN101 = new PreGL.Vec3(0,0,0);
-
-	tmpN200.setVec3(npatch[0]);
-	tmpN020.setVec3(npatch[1]);
-	tmpN002.setVec3(npatch[2]);
-	tmpN110.setVec3(npatch[3]);
-	tmpN011.setVec3(npatch[4]);
-	tmpN101.setVec3(npatch[5]);
-
-	norm.setVec3(tmpN200.scale( w*w ));
-	norm.setVec3(norm, tmpN020.scale( u*u ));
-	norm.setVec3(norm, tmpN002.scale( v*v ));
-	norm.setVec3(norm, tmpN110.scale( w*u ));
-	norm.setVec3(norm, tmpN011.scale( u*v ));
-	norm.setVec3(norm, tmpN101.scale( w*v ));
-
-	return norm;
-
-
-
-}
-
-
-function calVerts(data, i)
-{		
-	var newVerts = [];//new Float32Array(3*65000);
-	var newNorms = [];//new Float32Array(3*65000);
-	var newIndis = [];//0.0;
-
-	var verts = data[1];
-	var norms = data[2];
-	var indices = data[3];
-	var model = data[0];	
-
-		
-		level = 2.0;
+	{
+		level = level + 1,0;
 		var fac = 1.0 / level;
 
 		var tmpIndex = 0;
@@ -133,13 +101,14 @@ function calVerts(data, i)
 			var P1, P2, P3;
 			var N1, N2, N3;
 			
-			P1 = new PreGL.Vec3(verts[3 * i], verts[3 * i + 1], verts[3 * i + 2]);
-			P2 = new PreGL.Vec3(verts[3 * (i + 1)], verts[3 * (i + 1) + 1], verts[3 * (i + 1) + 2]);
-			P3 = new PreGL.Vec3(verts[3 * (i + 2)], verts[3 * (i + 2) + 1], verts[3 * (i + 2) + 2]);
+			P1 = new PreGL.Vec3(verts[3 * indices[ i ]], verts[3 * indices[i] + 1], verts[3 * indices[i] + 2]);
+			P2 = new PreGL.Vec3(verts[3 * indices[ i + 1 ]], verts[3 * indices[ i + 1 ] + 1], verts[3 * indices[ i + 1 ] + 2]);
+			P3 = new PreGL.Vec3(verts[3 * indices[ i + 2 ]], verts[3 * indices[ i + 2 ] + 1], verts[3 * indices[ i + 2 ] + 2]);
 
-			N1 = new PreGL.Vec3(norms[3 * i], norms[3 * i + 1], norms[3 * i + 2]);
-			N2 = new PreGL.Vec3(norms[3 * (i + 1)], norms[3 * (i + 1) + 1], norms[3 * (i + 1) + 2]);
-			N3 = new PreGL.Vec3(norms[3 * (i + 2)], norms[3 * (i + 2) + 1], norms[3 * (i + 2) + 2]);
+
+			N1 = new PreGL.Vec3(norms[3 * indices[ i ]], norms[3 * indices[ i ] + 1], norms[3 * indices[ i ] + 2]);
+			N2 = new PreGL.Vec3(norms[3 * indices[ i + 1 ]], norms[3 * indices[ i + 1 ] + 1], norms[3 * indices[ i + 1 ] + 2]);
+			N3 = new PreGL.Vec3(norms[3 * indices[ i + 2 ]], norms[3 * indices[ i + 2 ] + 1], norms[3 * indices[ i + 2 ] + 2]);
 
 			//uvw hash
 			uvwHash = [];
@@ -183,7 +152,7 @@ function calVerts(data, i)
 			b003.setVec3(tempP3);
 			
 			//w12 = dot( p2 - p1, n1 );
-			P2 = P2.sub2(P2,  P1);
+			P2.sub2(P2,  P1);
 			var w12 = P2.dot(N1); 
 			P2.setVec3(tempP2);
 			N1.setVec3(tempON1);
@@ -577,15 +546,82 @@ function calVerts(data, i)
   		model.addAttrib("normal", newNorms);
   		//model.addAttrib("texCoord", mesh.textures, 2);
   		model.setIndices(newIndis);
-  		verts = newVerts;
-  		norms = newNorms;
-  		indices = newIndis;
 
-  		data[0] = model;
-  		data[1] = verts;
-  		data[2] = norms;
-  		data[3] = indices;
-  		
-  		return data;
+	}
+
+	return model;
+
+	
+
+
+}
+
+
+function getPos(u, v, w, bpatch)
+{
+	var xyz = new PreGL.Vec3(0,0,0);
+	var tmpB300 = new PreGL.Vec3(0,0,0);
+	var tmpB030 = new PreGL.Vec3(0,0,0);
+	var tmpB003 = new PreGL.Vec3(0,0,0);
+	var tmpB210 = new PreGL.Vec3(0,0,0);
+	var tmpB120 = new PreGL.Vec3(0,0,0);
+	var tmpB201 = new PreGL.Vec3(0,0,0);
+	var tmpB021 = new PreGL.Vec3(0,0,0);
+	var tmpB102 = new PreGL.Vec3(0,0,0);
+	var tmpB012 = new PreGL.Vec3(0,0,0);
+	var tmpB111 = new PreGL.Vec3(0,0,0);
+
+	tmpB300.setVec3(bpatch[0]);
+	tmpB030.setVec3(bpatch[1]);
+	tmpB003.setVec3(bpatch[2]);
+	tmpB210.setVec3(bpatch[3]);
+	tmpB120.setVec3(bpatch[4]);
+	tmpB201.setVec3(bpatch[5]);
+	tmpB021.setVec3(bpatch[6]);
+	tmpB102.setVec3(bpatch[7]);
+	tmpB012.setVec3(bpatch[8]);
+	tmpB111.setVec3(bpatch[9]);
+
+	xyz.setVec3(tmpB300.scale( w*w*w ));
+	xyz.add2(xyz, tmpB030.scale( u*u*u ));
+	xyz.add2(xyz, tmpB003.scale( v*v*v ));
+	xyz.add2(xyz, tmpB210.scale( 3.0*u*w*w ));
+	xyz.add2(xyz, tmpB120.scale( 3.0*u*u*w ));
+	xyz.add2(xyz, tmpB201.scale( 3.0*v*w*w ));
+	xyz.add2(xyz, tmpB021.scale( 3.0*u*u*v ));
+	xyz.add2(xyz, tmpB102.scale( 3.0*v*v*w ));
+	xyz.add2(xyz, tmpB012.scale( 3.0*u*v*v ));
+	xyz.add2(xyz, tmpB111.scale( 6.0*u*v*w ));
+
+	return xyz;
+}
+
+function getNorm(u, v, w, npatch)
+{
+	var norm = new PreGL.Vec3(0,0,0);
+	var tmpN200 = new PreGL.Vec3(0,0,0);
+	var tmpN020 = new PreGL.Vec3(0,0,0);
+	var tmpN002 = new PreGL.Vec3(0,0,0);
+	var tmpN110 = new PreGL.Vec3(0,0,0);
+	var tmpN011 = new PreGL.Vec3(0,0,0);
+	var tmpN101 = new PreGL.Vec3(0,0,0);
+
+	tmpN200.setVec3(npatch[0]);
+	tmpN020.setVec3(npatch[1]);
+	tmpN002.setVec3(npatch[2]);
+	tmpN110.setVec3(npatch[3]);
+	tmpN011.setVec3(npatch[4]);
+	tmpN101.setVec3(npatch[5]);
+
+	norm.setVec3(tmpN200.scale( w*w ));
+	norm.setVec3(norm, tmpN020.scale( u*u ));
+	norm.setVec3(norm, tmpN002.scale( v*v ));
+	norm.setVec3(norm, tmpN110.scale( w*u ));
+	norm.setVec3(norm, tmpN011.scale( u*v ));
+	norm.setVec3(norm, tmpN101.scale( w*v ));
+
+	return norm;
+
+
 
 }
