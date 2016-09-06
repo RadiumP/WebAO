@@ -195,19 +195,25 @@ function calVerts(data, i)
 		{	
 			var P1, P2, P3;
 			var N1, N2, N3;
-			
-			P1 = new PreGL.Vec3(verts[3 * i], verts[3 * i + 1], verts[3 * i + 2]);
-			P2 = new PreGL.Vec3(verts[3 * (i + 1)], verts[3 * (i + 1) + 1], verts[3 * (i + 1) + 2]);
-			P3 = new PreGL.Vec3(verts[3 * (i + 2)], verts[3 * (i + 2) + 1], verts[3 * (i + 2) + 2]);
 
-			N1 = new PreGL.Vec3(norms[3 * i], norms[3 * i + 1], norms[3 * i + 2]);
-			N2 = new PreGL.Vec3(norms[3 * (i + 1)], norms[3 * (i + 1) + 1], norms[3 * (i + 1) + 2]);
-			N3 = new PreGL.Vec3(norms[3 * (i + 2)], norms[3 * (i + 2) + 1], norms[3 * (i + 2) + 2]);
+			var ia = indices[i];
+			var ib = indices[i + 1];
+			var ic = indices[i + 2];
+
+			
+			P1 = new PreGL.Vec3(verts[3 * ia], verts[3 * ia + 1], verts[3 * ia + 2]);
+			P2 = new PreGL.Vec3(verts[3 * (ib)], verts[3 * (ib) + 1], verts[3 * (ib) + 2]);
+			P3 = new PreGL.Vec3(verts[3 * (ic)], verts[3 * (ic) + 1], verts[3 * (ic) + 2]);
+
+			N1 = new PreGL.Vec3(norms[3 * ia], norms[3 * ia + 1], norms[3 * ia + 2]);
+			N2 = new PreGL.Vec3(norms[3 * (ib)], norms[3 * (ib) + 1], norms[3 * (ib) + 2]);
+			N3 = new PreGL.Vec3(norms[3 * (ic)], norms[3 * (ic) + 1], norms[3 * (ic) + 2]);
 
 			//uvw hash
-			uvwHash = [];
+			var uvwHash = [];
 			
-
+			//edge 
+			var edge = [];
 
 			//position
 			var tempP1 = new PreGL.Vec3(0,0,0);
@@ -420,217 +426,320 @@ function calVerts(data, i)
 			nPatch.push(n011);
 			nPatch.push(n101);
 			
+			var temp1 = new PreGL.Vec3(0,0,0);
+			temp1.setVec3(getPos(1, 0, 0, bPatch));
+		
+			var temp2 = new PreGL.Vec3(0,0,0);
+			temp1.setVec3(getPos(0, 1, 0, bPatch));
+
+			var temp3 = new PreGL.Vec3(0,0,0);
+			temp3.setVec3(getPos(0, 0, 1, bPatch));
+
+			var temp4 = new PreGL.Vec3(0,0,0); 
+			temp4.setVec3(getPos(0, 0.5, 0.5, bPatch));
+
+			var temp5 = new PreGL.Vec3(0,0,0); 
+			temp5.setVec3(getPos(0.5, 0, 0.5, bPatch));
+
+			var temp6 = new PreGL.Vec3(0,0,0); 
+			temp6.setVec3(getPos(0.5, 0.5, 0, bPatch));
+
+
+
+			newVerts.push(temp1.x);
+			newVerts.push(temp1.y);
+			newVerts.push(temp1.z);
+
+			newVerts.push(temp2.x);
+			newVerts.push(temp2.y);
+			newVerts.push(temp2.z);
+						
+			newVerts.push(temp3.x);
+			newVerts.push(temp3.y);
+			newVerts.push(temp3.z);
+
+			newVerts.push(temp4.x);
+			newVerts.push(temp4.y);
+			newVerts.push(temp4.z);
+
+			newVerts.push(temp5.x);
+			newVerts.push(temp5.y);
+			newVerts.push(temp5.z);
+
+			newVerts.push(temp6.x);
+			newVerts.push(temp6.y);
+			newVerts.push(temp6.z);
+
+
+			var tempN1 = new PreGL.Vec3(0,0,0);
+			tempN1.setVec3(getNorm(1, 0, 0, nPatch));
+			
+			var tempN2 = new PreGL.Vec3(0,0,0);
+			tempN2.setVec3(getNorm(0, 1, 0, nPatch));
+			
+			var tempN3 = new PreGL.Vec3(0,0,0);
+			tempN3.setVec3(getNorm(0, 0, 1, nPatch));
+			
+			var tempN4 = new PreGL.Vec3(0,0,0);
+			tempN4.setVec3(getNorm(0, 0.5, 0.5, nPatch));
+			
+			var tempN5 = new PreGL.Vec3(0,0,0);
+			tempN5.setVec3(getNorm(0.5, 0, 0.5, nPatch));
+			
+			var tempN6 = new PreGL.Vec3(0,0,0);
+			tempN6.setVec3(getNorm(0.5, 0.5, 0, nPatch));	
+
+			var edge1 = [];
+			var edge2 = [];
+			var edge3 = [];
+
+			newNorms.push(tempN1.x);
+			newNorms.push(tempN1.y);
+			newNorms.push(tempN1.z);
 			
 			
+			newNorms.push(tempN2.x);
+			newNorms.push(tempN2.y);
+			newNorms.push(tempN2.z);
+
+			newNorms.push(tempN3.x);
+			newNorms.push(tempN3.y);
+			newNorms.push(tempN3.z);
+
+
+			newNorms.push(tempN4.x);
+			newNorms.push(tempN4.y);
+			newNorms.push(tempN4.z);
+			
+			newNorms.push(tempN5.x);
+			newNorms.push(tempN5.y);
+			newNorms.push(tempN5.z);
+			
+			newNorms.push(tempN6.x);
+			newNorms.push(tempN6.y);
+			newNorms.push(tempN6.z);
+
+
+
+			newIndis.push(tmpIndex);
+			newIndis.push(tmpIndex + 5);
+			newIndis.push(tmpIndex + 4);
+
+			newIndis.push(tmpIndex + 5);
+			newIndis.push(tmpIndex + 1);
+			newIndis.push(tmpIndex + 3);
+
+			newIndis.push(tmpIndex + 4);
+			newIndis.push(tmpIndex + 3);
+			newIndis.push(tmpIndex + 2);
+
+			newIndis.push(tmpIndex + 4);
+			newIndis.push(tmpIndex + 5);
+			newIndis.push(tmpIndex + 3);
+
+			
+			tmpIndex += 6;
+
 
 
 			// In each triangle gen new verts
-			for(var n = 0; n < level; n++)
-			{	
-				var u = 1.0, v = 0.0, w = 0.0;
-				u = u - n / level;//care
-				w = w + n / level
+			// for(var n = 0; n < level; n++)
+			// {	
+			// 	var u = 1.0, v = 0.0, w = 0.0;
+			// 	u = u - n / level;//care
+			// 	w = w + n / level
 
 				
-				for(var m = 0; m < level - n; m++)
-				{	
+			// 	for(var m = 0; m < level - n; m++)
+			// 	{	
 
-					utmp = u - m / level;//care
-					vtmp = v + m / level
-					//type 2 inverse
-					if((utmp - fac) >= 0.0 && (w - fac) >= 0.0)
-					{
-						var uvw = new PreGL.Vec3(utmp, vtmp, w);
+			// 		utmp = u - m / level;//care
+			// 		vtmp = v + m / level
+			// 		//type 2 inverse
+			// 		if((utmp - fac) >= 0.0 && (w - fac) >= 0.0)
+			// 		{
+			// 			var uvw = new PreGL.Vec3(utmp, vtmp, w);
 						
-						
-
-						var temp4 = new PreGL.Vec3(0,0,0); 
-						temp4.setVec3(getPos(utmp, vtmp, w, bPatch));
+			// 			var temp4 = new PreGL.Vec3(0,0,0); 
+			// 			temp4.setVec3(getPos(utmp, vtmp, w, bPatch));
 						
 
 
-						var temp6 = new PreGL.Vec3(0,0,0); 
-						temp6.setVec3(getPos(utmp - fac, vtmp + fac, w, bPatch));
+			// 			var temp6 = new PreGL.Vec3(0,0,0); 
+			// 			temp6.setVec3(getPos(utmp - fac, vtmp + fac, w, bPatch));
 
 						
 
-						var temp5 = new PreGL.Vec3(0,0,0); 
-						temp5.setVec3(getPos(utmp, vtmp + fac, w - fac, bPatch));
+			// 			var temp5 = new PreGL.Vec3(0,0,0); 
+			// 			temp5.setVec3(getPos(utmp, vtmp + fac, w - fac, bPatch));
 						
 
 						
-						newVerts.push(temp4.x);
-						newVerts.push(temp4.y);
-						newVerts.push(temp4.z);
-						tmpIndex += 1.0;
-						newIndis.push(tmpIndex);
+			// 			newVerts.push(temp4.x);
+			// 			newVerts.push(temp4.y);
+			// 			newVerts.push(temp4.z);
+			// 			tmpIndex += 1.0;
+			// 			newIndis.push(tmpIndex);
 							
-						newVerts.push(temp5.x);
-						newVerts.push(temp5.y);
-						newVerts.push(temp5.z);
-						tmpIndex += 1.0;
-						newIndis.push(tmpIndex);
+			// 			newVerts.push(temp5.x);
+			// 			newVerts.push(temp5.y);
+			// 			newVerts.push(temp5.z);
+			// 			tmpIndex += 1.0;
+			// 			newIndis.push(tmpIndex);
 						
-						newVerts.push(temp6.x);
-						newVerts.push(temp6.y);
-						newVerts.push(temp6.z);
-						tmpIndex += 1.0;
-						newIndis.push(tmpIndex);
+			// 			newVerts.push(temp6.x);
+			// 			newVerts.push(temp6.y);
+			// 			newVerts.push(temp6.z);
+			// 			tmpIndex += 1.0;
+			// 			newIndis.push(tmpIndex);
 
-						//normal
+			// 			//normal
 					
 
-						var tempN4 = new PreGL.Vec3(0,0,0);//N1 * utmp + N2 * vtmp + N3 * w;
-						tempN4.setVec3(getNorm(utmp, vtmp, w, nPatch));	
-						// tempN4.setVec3(N1.scale(utmp));
-						// tempN4.add2(tempN4, N2.scale(vtmp));
-						// tempN4.add2(tempN4, N3.scale(w));	
+			// 			var tempN4 = new PreGL.Vec3(0,0,0);//N1 * utmp + N2 * vtmp + N3 * w;
+			// 			tempN4.setVec3(getNorm(utmp, vtmp, w, nPatch));	
+			// 			// tempN4.setVec3(N1.scale(utmp));
+			// 			// tempN4.add2(tempN4, N2.scale(vtmp));
+			// 			// tempN4.add2(tempN4, N3.scale(w));	
 
-						// N1.setVec3(tempON1);
-						// N2.setVec3(tempON2);
-						// N3.setVec3(tempON3);	
+			// 			// N1.setVec3(tempON1);
+			// 			// N2.setVec3(tempON2);
+			// 			// N3.setVec3(tempON3);	
 										
-						var tempN6 = new PreGL.Vec3(0,0,0);//N1 * (utmp - fac) + N2 * (vtmp + fac) + N3 * w);
-						tempN6.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
-						// tempN6.setVec3(N1.scale(utmp - fac));
-						// tempN6.add2(tempN6, N2.scale(vtmp + fac));
-						// tempN6.add2(tempN6, N3.scale(w));	
+			// 			var tempN6 = new PreGL.Vec3(0,0,0);//N1 * (utmp - fac) + N2 * (vtmp + fac) + N3 * w);
+			// 			tempN6.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
+			// 			// tempN6.setVec3(N1.scale(utmp - fac));
+			// 			// tempN6.add2(tempN6, N2.scale(vtmp + fac));
+			// 			// tempN6.add2(tempN6, N3.scale(w));	
 
-						// N1.setVec3(tempON1);
-						// N2.setVec3(tempON2);
-						// N3.setVec3(tempON3);	
+			// 			// N1.setVec3(tempON1);
+			// 			// N2.setVec3(tempON2);
+			// 			// N3.setVec3(tempON3);	
 
-						var tempN5 = new PreGL.Vec3(0,0,0);//N1 * utmp  + N2 * (vtmp + fac) + N3 * (w - fac));
-						tempN5.setVec3(getNorm(utmp, vtmp + fac, w - fac, nPatch));
-						// tempN5.setVec3(N1.scale(utmp));
-						// tempN5.add2(tempN5, N2.scale(vtmp - fac));
-						// tempN5.add2(tempN5, N3.scale(w + fac));
+			// 			var tempN5 = new PreGL.Vec3(0,0,0);//N1 * utmp  + N2 * (vtmp + fac) + N3 * (w - fac));
+			// 			tempN5.setVec3(getNorm(utmp, vtmp + fac, w - fac, nPatch));
+			// 			// tempN5.setVec3(N1.scale(utmp));
+			// 			// tempN5.add2(tempN5, N2.scale(vtmp - fac));
+			// 			// tempN5.add2(tempN5, N3.scale(w + fac));
 						
-						newNorms.push(tempN4.x);
-						newNorms.push(tempN4.y);
-						newNorms.push(tempN4.z);
+			// 			newNorms.push(tempN4.x);
+			// 			newNorms.push(tempN4.y);
+			// 			newNorms.push(tempN4.z);
 						
-						newNorms.push(tempN5.x);
-						newNorms.push(tempN5.y);
-						newNorms.push(tempN5.z);
+			// 			newNorms.push(tempN5.x);
+			// 			newNorms.push(tempN5.y);
+			// 			newNorms.push(tempN5.z);
 						
-						newNorms.push(tempN6.x);
-						newNorms.push(tempN6.y);
-						newNorms.push(tempN6.z);
+			// 			newNorms.push(tempN6.x);
+			// 			newNorms.push(tempN6.y);
+			// 			newNorms.push(tempN6.z);
 
 
 
 					
 
-					}
+			// 		}
 
 
-					//type 1 normal
-					//position
+			// 		//type 1 normal
+			// 		//position
 
 
 				
-					var temp1 = new PreGL.Vec3(0,0,0); //var temp1 = new PreGL.Vec3(P1 * utmp + P2 * vtmp + P3 * w);
-					temp1.setVec3(getPos(utmp, vtmp, w, bPatch));
+			// 		var temp1 = new PreGL.Vec3(0,0,0); //var temp1 = new PreGL.Vec3(P1 * utmp + P2 * vtmp + P3 * w);
+			// 		temp1.setVec3(getPos(utmp, vtmp, w, bPatch));
 					
-					var temp2 = new PreGL.Vec3(0,0,0);// var temp2 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
-					temp2.setVec3(getPos(utmp - fac, vtmp + fac, w, bPatch));
+			// 		var temp2 = new PreGL.Vec3(0,0,0);// var temp2 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
+			// 		temp2.setVec3(getPos(utmp - fac, vtmp + fac, w, bPatch));
 
-					var temp3 = new PreGL.Vec3(0,0,0);//var temp3 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * vtmp + P3 * (w + fac)); 
-					temp3.setVec3(getPos(utmp - fac, vtmp, w + fac, bPatch));
+			// 		var temp3 = new PreGL.Vec3(0,0,0);//var temp3 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * vtmp + P3 * (w + fac)); 
+			// 		temp3.setVec3(getPos(utmp - fac, vtmp, w + fac, bPatch));
 
 					
-					newVerts.push(temp1.x);
-					newVerts.push(temp1.y);
-					newVerts.push(temp1.z);
+			// 		newVerts.push(temp1.x);
+			// 		newVerts.push(temp1.y);
+			// 		newVerts.push(temp1.z);
 
 
-					if(tmpIndex !== 0)
-					{
-						tmpIndex += 1.0;
-					}
-					//tmpIndex += 1.0;	
+			// 		if(tmpIndex !== 0)
+			// 		{
+			// 			tmpIndex += 1.0;
+			// 		}
+			// 		//tmpIndex += 1.0;	
 					
-					newIndis.push(tmpIndex);	
+			// 		newIndis.push(tmpIndex);	
 					
-					newVerts.push(temp2.x);
-					newVerts.push(temp2.y);
-					newVerts.push(temp2.z);
-					tmpIndex += 1.0;
-					newIndis.push(tmpIndex);
+			// 		newVerts.push(temp2.x);
+			// 		newVerts.push(temp2.y);
+			// 		newVerts.push(temp2.z);
+			// 		tmpIndex += 1.0;
+			// 		newIndis.push(tmpIndex);
 					
-					newVerts.push(temp3.x);
-					newVerts.push(temp3.y);
-					newVerts.push(temp3.z);
-					tmpIndex += 1.0;
-					newIndis.push(tmpIndex);
+			// 		newVerts.push(temp3.x);
+			// 		newVerts.push(temp3.y);
+			// 		newVerts.push(temp3.z);
+			// 		tmpIndex += 1.0;
+			// 		newIndis.push(tmpIndex);
 
 
-					//normal
-					// var tempON1 = new PreGL.Vec3(0,0,0);
-					// var tempON2 = new PreGL.Vec3(0,0,0);
-					// var tempON3 = new PreGL.Vec3(0,0,0);
+			// 		//normal
+			// 		// var tempON1 = new PreGL.Vec3(0,0,0);
+			// 		// var tempON2 = new PreGL.Vec3(0,0,0);
+			// 		// var tempON3 = new PreGL.Vec3(0,0,0);
 
-					// tempON1.setVec3(N1);
-					// tempON2.setVec3(N2);
-					// tempON3.setVec3(N3);
+			// 		// tempON1.setVec3(N1);
+			// 		// tempON2.setVec3(N2);
+			// 		// tempON3.setVec3(N3);
 
-					var tempN1 = new PreGL.Vec3(0,0,0);//var tempN1 = new PreGL.Vec3(P1 * utmp + P2 * vtmp + P3 * w);	
-					tempN1.setVec3(getNorm(utmp, vtmp, w, nPatch));
+			// 		var tempN1 = new PreGL.Vec3(0,0,0);//var tempN1 = new PreGL.Vec3(P1 * utmp + P2 * vtmp + P3 * w);	
+			// 		tempN1.setVec3(getNorm(utmp, vtmp, w, nPatch));
 
-					// tempN1.setVec3(N1.scale(utmp));
-					// tempN1.add2(tempN1, N2.scale(vtmp));
-					// tempN1.add2(tempN1, N3.scale(w));	
+			// 		// tempN1.setVec3(N1.scale(utmp));
+			// 		// tempN1.add2(tempN1, N2.scale(vtmp));
+			// 		// tempN1.add2(tempN1, N3.scale(w));	
 
-					// N1.setVec3(tempON1);
-					// N2.setVec3(tempON2);
-					// N3.setVec3(tempON3);	
+			// 		// N1.setVec3(tempON1);
+			// 		// N2.setVec3(tempON2);
+			// 		// N3.setVec3(tempON3);	
 									
-					var tempN2 = new PreGL.Vec3(0,0,0);//var tempN2 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
-					tempN2.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
-					// tempN2.setVec3(N1.scale(utmp - fac));
-					// tempN2.add2(tempN2, N2.scale(vtmp + fac));
-					// tempN2.add2(tempN2, N3.scale(w));	
+			// 		var tempN2 = new PreGL.Vec3(0,0,0);//var tempN2 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * (vtmp + fac) + P3 * w);
+			// 		tempN2.setVec3(getNorm(utmp - fac, vtmp + fac, w, nPatch));
+			// 		// tempN2.setVec3(N1.scale(utmp - fac));
+			// 		// tempN2.add2(tempN2, N2.scale(vtmp + fac));
+			// 		// tempN2.add2(tempN2, N3.scale(w));	
 
-					// N1.setVec3(tempON1);
-					// N2.setVec3(tempON2);
-					// N3.setVec3(tempON3);	
+			// 		// N1.setVec3(tempON1);
+			// 		// N2.setVec3(tempON2);
+			// 		// N3.setVec3(tempON3);	
 
-					var tempN3 = new PreGL.Vec3(0,0,0);//var tempN3 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * vtmp + P3 * (w + fac));
-					tempN3.setVec3(getNorm(utmp - fac, vtmp, w + fac, nPatch));
-					// tempN3.setVec3(N1.scale(utmp - fac));
-					// tempN3.add2(tempN3, N2.scale(vtmp));
-					// tempN3.add2(tempN3, N3.scale(w + fac));
+			// 		var tempN3 = new PreGL.Vec3(0,0,0);//var tempN3 = new PreGL.Vec3(P1 * (utmp - fac) + P2 * vtmp + P3 * (w + fac));
+			// 		tempN3.setVec3(getNorm(utmp - fac, vtmp, w + fac, nPatch));
+			// 		// tempN3.setVec3(N1.scale(utmp - fac));
+			// 		// tempN3.add2(tempN3, N2.scale(vtmp));
+			// 		// tempN3.add2(tempN3, N3.scale(w + fac));
 					
-					newNorms.push(tempN1.x);
-					newNorms.push(tempN1.y);
-					newNorms.push(tempN1.z);
+			// 		newNorms.push(tempN1.x);
+			// 		newNorms.push(tempN1.y);
+			// 		newNorms.push(tempN1.z);
 					
 					
-					newNorms.push(tempN2.x);
-					newNorms.push(tempN2.y);
-					newNorms.push(tempN2.z);
+			// 		newNorms.push(tempN2.x);
+			// 		newNorms.push(tempN2.y);
+			// 		newNorms.push(tempN2.z);
 
-					newNorms.push(tempN3.x);
-					newNorms.push(tempN3.y);
-					newNorms.push(tempN3.z);
-					
-								
+			// 		newNorms.push(tempN3.x);
+			// 		newNorms.push(tempN3.y);
+			// 		newNorms.push(tempN3.z);
 					
 					
 					
-					
-
-
-
-					
-				}
+			// 	}
 
 
 
 
-				//newVerts.push(u)
-			}
+			// 	//newVerts.push(u)
+			// }
 
 
 
@@ -643,6 +752,8 @@ function calVerts(data, i)
   		verts = newVerts;
   		norms = newNorms;
   		indices = newIndis;
+
+
 
   		data[0] = model;
   		data[1] = verts;
