@@ -420,13 +420,17 @@ function calVerts(data, i)
 
 
 
-	var verts = data[1];
-	var norms = data[2];
-	var indices = data[3];
-	var model = data[0];	
+	var verts = [];
+	verts = data[1];
+	var norms = [];
+	norms = data[2];
+	var indices = [];
+	indices = data[3];
+	var model = [];
+	model = data[0];	
 
-	newVerts = verts; //question it
-	newNorms = norms;
+	newVerts = verts.slice(0); //question it
+	newNorms = norms.slice(0);
 
 	//edge 
 	var edge = new Array(verts.length / 3);//question it
@@ -931,9 +935,9 @@ function calVerts(data, i)
   		model.addAttrib("normal", newNorms);
   		//model.addAttrib("texCoord", mesh.textures, 2);
   		model.setIndices(newIndis);
-  		verts = newVerts;
-  		norms = newNorms;
-  		indices = newIndis;
+  		verts = newVerts.slice(0);
+  		norms = newNorms.slice(0);
+  		indices = newIndis.slice(0);
 
 
 
