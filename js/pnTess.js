@@ -428,6 +428,9 @@ function calVerts(data, i)
 	newVerts = verts; //question it
 	newNorms = norms;
 
+	//edge 
+	var edge = new Array(verts.length / 3);//question it
+	edge.fill([-1, -1]);
 		
 		level = 2.0;
 		var fac = 1.0 / level;
@@ -455,9 +458,7 @@ function calVerts(data, i)
 			//uvw hash
 			var uvwHash = [];
 			
-			//edge 
-			var edge = new Array(verts.length / 3);//question it
-			edge.fill(0);
+		
 
 			var edge1 = [];
 			var edge2 = [];
@@ -512,7 +513,7 @@ function calVerts(data, i)
 
 
 			//?????
-			if(edge[ia] === 0)
+			if(edge[ia][0] === -1)
 			{	
 				newVerts[ia * 3] = (tempP[0].x);
 				newVerts[ia * 3 + 1] = (tempP[0].y);
@@ -522,11 +523,11 @@ function calVerts(data, i)
 				newNorms[ia * 3 + 1] = tempN[0].y;
 				newNorms[ia * 3 + 2] = tempN[0].z;
 
-				edge[ia] = 1;
+				edge[ia] = [0,0];
 
 
 			}
-			if(edge[ib] === 0)
+			if(edge[ib][0] === -1)
 			{
 				newVerts[ib * 3] = (tempP[1].x);
 				newVerts[ib * 3 + 1] = (tempP[1].y);
@@ -536,9 +537,9 @@ function calVerts(data, i)
 				newNorms[ib * 3 + 1] = tempN[1].y;
 				newNorms[ib * 3 + 2] = tempN[1].z;
 
-				edge[ib] = 1;
+				edge[ib] = [0,0];
 			}
-			if(edge[ic] === 0)
+			if(edge[ic][0] === -1)
 			{
 				newVerts[ic * 3] = (tempP[2].x);
 				newVerts[ic * 3 + 1] = (tempP[2].y);
@@ -548,7 +549,7 @@ function calVerts(data, i)
 				newNorms[ic * 3 + 1] = tempN[2].y;
 				newNorms[ic * 3 + 2] = tempN[2].z;
 
-				edge[ic] = 1;
+				edge[ic] = [0,0];
 			}
 
 
@@ -571,10 +572,12 @@ function calVerts(data, i)
 
 			var newEdge3 = edge2;
 			var index3;
-			for(var i in edge)
+
+			for(var x = 0; x < edge.length; x++)
 			{
-				if(edge[i][0] !== edge2[0] || edge[i][1] !== edge2[1])
+				if((edge[x][0] !== edge2[0] || edge[x][1] !== edge2[1]) && x === edge.length - 1)
 				{
+					index3 = newVerts.length / 3;
 					newVerts.push(tempP[3].x); 
 					newVerts.push(tempP[3].y); 
 					newVerts.push(tempP[3].z);
@@ -585,13 +588,19 @@ function calVerts(data, i)
 			
 
 					edge.push(edge2);
-					index3 = newVerts.length - 1;
+					
+
+					break;
 				}
-				else
+
+				else if(edge[x][0] === edge2[0] && edge[x][1] === edge2[1])
 				{
-					index3 = i;
+					index3 = x;
+					break;
 				}
 			}
+
+			
 
 			tempP[4] = new PreGL.Vec3(0,0,0); 
 			tempP[4].setVec3(getPos(0.5, 0, 0.5, bPatch));
@@ -600,10 +609,13 @@ function calVerts(data, i)
 
 			//var newEdge4 = edge3;
 			var index4;
-			for(var i in edge)
+
+			for(var y = 0; y < edge.length; y++)
 			{
-				if(edge[i][0] !== edge3[0] || edge[i][1] !== edge3[1])
+				if((edge[y][0] !== edge3[0] || edge[y][1] !== edge3[1]) && y === edge.length - 1)
 				{
+					index4 = newVerts.length / 3;
+
 					newVerts.push(tempP[4].x); 
 					newVerts.push(tempP[4].y); 
 					newVerts.push(tempP[4].z);
@@ -614,14 +626,20 @@ function calVerts(data, i)
 
 
 					edge.push(edge3);
-					index4 = newVerts.length - 1;
+					
+
+					break;
 				}
-				else
+
+				else if(edge[y][0] === edge3[0] && edge[y][1] === edge3[1])
 				{
-					index4 = i;
+					index4 = y;
+					break;
 				}
 			}
 
+
+			
 
 			tempP[5] = new PreGL.Vec3(0,0,0); 
 			tempP[5].setVec3(getPos(0.5, 0.5, 0, bPatch));
@@ -630,10 +648,12 @@ function calVerts(data, i)
 
 			//var newEdge5 = edge1;
 			var index5;
-			for(var i in edge)
+			
+			for(var z = 0; z < edge.length; z++)
 			{
-				if(edge[i][0] !== edge1[0] || edge[i][1] !== edge1[1])
+				if((edge[z][0] !== edge1[0] || edge[z][1] !== edge1[1]) && z === edge.length - 1)
 				{
+					index5 = newVerts.length / 3;
 					newVerts.push(tempP[5].x); 
 					newVerts.push(tempP[5].y); 
 					newVerts.push(tempP[5].z);
@@ -643,13 +663,43 @@ function calVerts(data, i)
 					newNorms.push(tempN[5].z);
 					
 					edge.push(edge1);
-					index5 = newVerts.length - 1;
+					
+					break;
 				}
-				else
+
+				else if(edge[z][0] === edge1[0] && edge[z][1] === edge1[1])
 				{
-					index5 = i;
+					index5 = z;
+					break;
 				}
 			}
+
+
+			// for(var k of edge)
+			// {
+				
+			// 	if((k[0] !== edge1[0] || k[1] !== edge1[1]) && z === edge.length)
+			// 	{
+			// 		index5 = newVerts.length / 3;
+			// 		newVerts.push(tempP[5].x); 
+			// 		newVerts.push(tempP[5].y); 
+			// 		newVerts.push(tempP[5].z);
+					
+			// 		newNorms.push(tempN[5].x);
+			// 		newNorms.push(tempN[5].y);
+			// 		newNorms.push(tempN[5].z);
+					
+			// 		edge.push(edge1);
+					
+			// 		break;
+			// 	}
+			// 	else
+			// 	{
+			// 		index5 = i;
+			// 	}
+
+			// 	z++;
+			// }
 			
 
 

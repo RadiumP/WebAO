@@ -43,6 +43,7 @@ window.onload = function() {
 	var level = 1;
 
 
+
 	function setup() { 
 		var supported = gl.getSupportedExtensions();                  
 		PreGLExt.log("Supported WebGL extensions: " + supported);
@@ -70,7 +71,7 @@ window.onload = function() {
 		model = new subMesh(gl,sub, level);
 		luffy = SimpleMesh.loadObj(gl, luf);
 
-		pnTest = new pnTess(gl, sub, level);
+		pnTest = new pnTess(gl, objStr, level);
 
 		//pnTest = new subMesh(gl,sub, level);
 
