@@ -104,118 +104,9 @@ function pnTess(gl, path, level)
 }
 
 
-function getPos(u, v, w, bpatch)
+function genBpatch(P1, P2, P3, N1, N2, N3)
 {
-	var xyz = new PreGL.Vec3(0,0,0);
-	var tmpB300 = new PreGL.Vec3(0,0,0);
-	var tmpB030 = new PreGL.Vec3(0,0,0);
-	var tmpB003 = new PreGL.Vec3(0,0,0);
-	var tmpB210 = new PreGL.Vec3(0,0,0);
-	var tmpB120 = new PreGL.Vec3(0,0,0);
-	var tmpB201 = new PreGL.Vec3(0,0,0);
-	var tmpB021 = new PreGL.Vec3(0,0,0);
-	var tmpB102 = new PreGL.Vec3(0,0,0);
-	var tmpB012 = new PreGL.Vec3(0,0,0);
-	var tmpB111 = new PreGL.Vec3(0,0,0);
-
-	tmpB300.setVec3(bpatch[0]);
-	tmpB030.setVec3(bpatch[1]);
-	tmpB003.setVec3(bpatch[2]);
-	tmpB210.setVec3(bpatch[3]);
-	tmpB120.setVec3(bpatch[4]);
-	tmpB201.setVec3(bpatch[5]);
-	tmpB021.setVec3(bpatch[6]);
-	tmpB102.setVec3(bpatch[7]);
-	tmpB012.setVec3(bpatch[8]);
-	tmpB111.setVec3(bpatch[9]);
-
-	xyz.setVec3(tmpB300.scale( w*w*w ));
-	xyz.add2(xyz, tmpB030.scale( u*u*u ));
-	xyz.add2(xyz, tmpB003.scale( v*v*v ));
-	xyz.add2(xyz, tmpB210.scale( 3.0*u*w*w ));
-	xyz.add2(xyz, tmpB120.scale( 3.0*u*u*w ));
-	xyz.add2(xyz, tmpB201.scale( 3.0*v*w*w ));
-	xyz.add2(xyz, tmpB021.scale( 3.0*u*u*v ));
-	xyz.add2(xyz, tmpB102.scale( 3.0*v*v*w ));
-	xyz.add2(xyz, tmpB012.scale( 3.0*u*v*v ));
-	xyz.add2(xyz, tmpB111.scale( 6.0*u*v*w ));
-
-	return xyz;
-}
-
-function getNorm(u, v, w, npatch)
-{
-	var norm = new PreGL.Vec3(0,0,0);
-	var tmpN200 = new PreGL.Vec3(0,0,0);
-	var tmpN020 = new PreGL.Vec3(0,0,0);
-	var tmpN002 = new PreGL.Vec3(0,0,0);
-	var tmpN110 = new PreGL.Vec3(0,0,0);
-	var tmpN011 = new PreGL.Vec3(0,0,0);
-	var tmpN101 = new PreGL.Vec3(0,0,0);
-
-	tmpN200.setVec3(npatch[0]);
-	tmpN020.setVec3(npatch[1]);
-	tmpN002.setVec3(npatch[2]);
-	tmpN110.setVec3(npatch[3]);
-	tmpN011.setVec3(npatch[4]);
-	tmpN101.setVec3(npatch[5]);
-
-	norm.setVec3(tmpN200.scale( w*w ));
-	norm.setVec3(norm, tmpN020.scale( u*u ));
-	norm.setVec3(norm, tmpN002.scale( v*v ));
-	norm.setVec3(norm, tmpN110.scale( w*u ));
-	norm.setVec3(norm, tmpN011.scale( u*v ));
-	norm.setVec3(norm, tmpN101.scale( w*v ));
-
-	return norm;
-
-
-
-}
-
-
-function calVerts(data, i)
-{		
-	var newVerts = [];//new Float32Array(3*65000);
-	var newNorms = [];//new Float32Array(3*65000);
-	var newIndis = [];//0.0;
-
-	var verts = data[1];
-	var norms = data[2];
-	var indices = data[3];
-	var model = data[0];	
-
-		
-		level = 2.0;
-		var fac = 1.0 / level;
-
-		var tmpIndex = 0;
-		//newIndis.push(tmpIndex);
-		for(var i = 0; i < indices.length; i = i + 3)
-		{	
-			var P1, P2, P3;
-			var N1, N2, N3;
-
-			var ia = indices[i];
-			var ib = indices[i + 1];
-			var ic = indices[i + 2];
-
-			
-			P1 = new PreGL.Vec3(verts[3 * ia], verts[3 * ia + 1], verts[3 * ia + 2]);
-			P2 = new PreGL.Vec3(verts[3 * (ib)], verts[3 * (ib) + 1], verts[3 * (ib) + 2]);
-			P3 = new PreGL.Vec3(verts[3 * (ic)], verts[3 * (ic) + 1], verts[3 * (ic) + 2]);
-
-			N1 = new PreGL.Vec3(norms[3 * ia], norms[3 * ia + 1], norms[3 * ia + 2]);
-			N2 = new PreGL.Vec3(norms[3 * (ib)], norms[3 * (ib) + 1], norms[3 * (ib) + 2]);
-			N3 = new PreGL.Vec3(norms[3 * (ic)], norms[3 * (ic) + 1], norms[3 * (ic) + 2]);
-
-			//uvw hash
-			var uvwHash = [];
-			
-			//edge 
-			var edge = [];
-
-			//position
+	//position
 			var tempP1 = new PreGL.Vec3(0,0,0);
 			var tempP2 = new PreGL.Vec3(0,0,0);
 			var tempP3 = new PreGL.Vec3(0,0,0);
@@ -368,6 +259,28 @@ function calVerts(data, i)
 			bPatch.push(b012);
 			bPatch.push(b111);
 
+			return bPatch;
+}
+
+function genNpatch(P1, P2, P3, N1, N2, N3)
+{
+			var tempP1 = new PreGL.Vec3(0,0,0);
+			var tempP2 = new PreGL.Vec3(0,0,0);
+			var tempP3 = new PreGL.Vec3(0,0,0);
+
+			tempP1.setVec3(P1);
+			tempP2.setVec3(P2);
+			tempP3.setVec3(P3);
+
+			//normal
+			var tempON1 = new PreGL.Vec3(0,0,0);
+			var tempON2 = new PreGL.Vec3(0,0,0);
+			var tempON3 = new PreGL.Vec3(0,0,0);
+
+			tempON1.setVec3(N1);
+			tempON2.setVec3(N2);
+			tempON3.setVec3(N3);
+
 			//norm patch
 			var nPatch = [];
 			var n200 = new PreGL.Vec3(0,0,0); 
@@ -425,120 +338,339 @@ function calVerts(data, i)
 			nPatch.push(n110);
 			nPatch.push(n011);
 			nPatch.push(n101);
-			
-			var temp1 = new PreGL.Vec3(0,0,0);
-			temp1.setVec3(getPos(1, 0, 0, bPatch));
+
+			return nPatch;
+}
+
+function getPos(u, v, w, bpatch)
+{
+	var xyz = new PreGL.Vec3(0,0,0);
+	var tmpB300 = new PreGL.Vec3(0,0,0);
+	var tmpB030 = new PreGL.Vec3(0,0,0);
+	var tmpB003 = new PreGL.Vec3(0,0,0);
+	var tmpB210 = new PreGL.Vec3(0,0,0);
+	var tmpB120 = new PreGL.Vec3(0,0,0);
+	var tmpB201 = new PreGL.Vec3(0,0,0);
+	var tmpB021 = new PreGL.Vec3(0,0,0);
+	var tmpB102 = new PreGL.Vec3(0,0,0);
+	var tmpB012 = new PreGL.Vec3(0,0,0);
+	var tmpB111 = new PreGL.Vec3(0,0,0);
+
+	tmpB300.setVec3(bpatch[0]);
+	tmpB030.setVec3(bpatch[1]);
+	tmpB003.setVec3(bpatch[2]);
+	tmpB210.setVec3(bpatch[3]);
+	tmpB120.setVec3(bpatch[4]);
+	tmpB201.setVec3(bpatch[5]);
+	tmpB021.setVec3(bpatch[6]);
+	tmpB102.setVec3(bpatch[7]);
+	tmpB012.setVec3(bpatch[8]);
+	tmpB111.setVec3(bpatch[9]);
+
+	xyz.setVec3(tmpB300.scale( w*w*w ));
+	xyz.add2(xyz, tmpB030.scale( u*u*u ));
+	xyz.add2(xyz, tmpB003.scale( v*v*v ));
+	xyz.add2(xyz, tmpB210.scale( 3.0*u*w*w ));
+	xyz.add2(xyz, tmpB120.scale( 3.0*u*u*w ));
+	xyz.add2(xyz, tmpB201.scale( 3.0*v*w*w ));
+	xyz.add2(xyz, tmpB021.scale( 3.0*u*u*v ));
+	xyz.add2(xyz, tmpB102.scale( 3.0*v*v*w ));
+	xyz.add2(xyz, tmpB012.scale( 3.0*u*v*v ));
+	xyz.add2(xyz, tmpB111.scale( 6.0*u*v*w ));
+
+	return xyz;
+}
+
+function getNorm(u, v, w, npatch)
+{
+	var norm = new PreGL.Vec3(0,0,0);
+	var tmpN200 = new PreGL.Vec3(0,0,0);
+	var tmpN020 = new PreGL.Vec3(0,0,0);
+	var tmpN002 = new PreGL.Vec3(0,0,0);
+	var tmpN110 = new PreGL.Vec3(0,0,0);
+	var tmpN011 = new PreGL.Vec3(0,0,0);
+	var tmpN101 = new PreGL.Vec3(0,0,0);
+
+	tmpN200.setVec3(npatch[0]);
+	tmpN020.setVec3(npatch[1]);
+	tmpN002.setVec3(npatch[2]);
+	tmpN110.setVec3(npatch[3]);
+	tmpN011.setVec3(npatch[4]);
+	tmpN101.setVec3(npatch[5]);
+
+	norm.setVec3(tmpN200.scale( w*w ));
+	norm.setVec3(norm, tmpN020.scale( u*u ));
+	norm.setVec3(norm, tmpN002.scale( v*v ));
+	norm.setVec3(norm, tmpN110.scale( w*u ));
+	norm.setVec3(norm, tmpN011.scale( u*v ));
+	norm.setVec3(norm, tmpN101.scale( w*v ));
+
+	return norm;
+
+
+
+}
+
+
+function calVerts(data, i)
+{		
+	var newVerts = [];//new Float32Array(3*65000);
+	var newNorms = [];//new Float32Array(3*65000);
+	var newIndis = [];//0.0;
+
+
+
+	var verts = data[1];
+	var norms = data[2];
+	var indices = data[3];
+	var model = data[0];	
+
+	newVerts = verts; //question it
+	newNorms = norms;
+
 		
-			var temp2 = new PreGL.Vec3(0,0,0);
-			temp1.setVec3(getPos(0, 1, 0, bPatch));
+		level = 2.0;
+		var fac = 1.0 / level;
 
-			var temp3 = new PreGL.Vec3(0,0,0);
-			temp3.setVec3(getPos(0, 0, 1, bPatch));
+		var tmpIndex = 0;
+		//newIndis.push(tmpIndex);
+		for(var i = 0; i < indices.length; i = i + 3)
+		{	
+			var P1, P2, P3;
+			var N1, N2, N3;
 
-			var temp4 = new PreGL.Vec3(0,0,0); 
-			temp4.setVec3(getPos(0, 0.5, 0.5, bPatch));
+			var ia = indices[i];
+			var ib = indices[i + 1];
+			var ic = indices[i + 2];
 
-			var temp5 = new PreGL.Vec3(0,0,0); 
-			temp5.setVec3(getPos(0.5, 0, 0.5, bPatch));
-
-			var temp6 = new PreGL.Vec3(0,0,0); 
-			temp6.setVec3(getPos(0.5, 0.5, 0, bPatch));
-
-
-
-			newVerts.push(temp1.x);
-			newVerts.push(temp1.y);
-			newVerts.push(temp1.z);
-
-			newVerts.push(temp2.x);
-			newVerts.push(temp2.y);
-			newVerts.push(temp2.z);
-						
-			newVerts.push(temp3.x);
-			newVerts.push(temp3.y);
-			newVerts.push(temp3.z);
-
-			newVerts.push(temp4.x);
-			newVerts.push(temp4.y);
-			newVerts.push(temp4.z);
-
-			newVerts.push(temp5.x);
-			newVerts.push(temp5.y);
-			newVerts.push(temp5.z);
-
-			newVerts.push(temp6.x);
-			newVerts.push(temp6.y);
-			newVerts.push(temp6.z);
-
-
-			var tempN1 = new PreGL.Vec3(0,0,0);
-			tempN1.setVec3(getNorm(1, 0, 0, nPatch));
 			
-			var tempN2 = new PreGL.Vec3(0,0,0);
-			tempN2.setVec3(getNorm(0, 1, 0, nPatch));
+			P1 = new PreGL.Vec3(verts[3 * ia], verts[3 * ia + 1], verts[3 * ia + 2]);
+			P2 = new PreGL.Vec3(verts[3 * (ib)], verts[3 * (ib) + 1], verts[3 * (ib) + 2]);
+			P3 = new PreGL.Vec3(verts[3 * (ic)], verts[3 * (ic) + 1], verts[3 * (ic) + 2]);
+
+			N1 = new PreGL.Vec3(norms[3 * ia], norms[3 * ia + 1], norms[3 * ia + 2]);
+			N2 = new PreGL.Vec3(norms[3 * (ib)], norms[3 * (ib) + 1], norms[3 * (ib) + 2]);
+			N3 = new PreGL.Vec3(norms[3 * (ic)], norms[3 * (ic) + 1], norms[3 * (ic) + 2]);
+
+			//uvw hash
+			var uvwHash = [];
 			
-			var tempN3 = new PreGL.Vec3(0,0,0);
-			tempN3.setVec3(getNorm(0, 0, 1, nPatch));
-			
-			var tempN4 = new PreGL.Vec3(0,0,0);
-			tempN4.setVec3(getNorm(0, 0.5, 0.5, nPatch));
-			
-			var tempN5 = new PreGL.Vec3(0,0,0);
-			tempN5.setVec3(getNorm(0.5, 0, 0.5, nPatch));
-			
-			var tempN6 = new PreGL.Vec3(0,0,0);
-			tempN6.setVec3(getNorm(0.5, 0.5, 0, nPatch));	
+			//edge 
+			var edge = new Array(verts.length / 3);//question it
+			edge.fill(0);
 
 			var edge1 = [];
 			var edge2 = [];
 			var edge3 = [];
 
-			newNorms.push(tempN1.x);
-			newNorms.push(tempN1.y);
-			newNorms.push(tempN1.z);
-			
-			
-			newNorms.push(tempN2.x);
-			newNorms.push(tempN2.y);
-			newNorms.push(tempN2.z);
-
-			newNorms.push(tempN3.x);
-			newNorms.push(tempN3.y);
-			newNorms.push(tempN3.z);
+			edge1 = [ia + ib, Math.abs(ia - ib)];
+			edge2 = [ib + ic, Math.abs(ib - ic)];
+			edge3 = [ic + ia, Math.abs(ic - ia)];
 
 
-			newNorms.push(tempN4.x);
-			newNorms.push(tempN4.y);
-			newNorms.push(tempN4.z);
-			
-			newNorms.push(tempN5.x);
-			newNorms.push(tempN5.y);
-			newNorms.push(tempN5.z);
-			
-			newNorms.push(tempN6.x);
-			newNorms.push(tempN6.y);
-			newNorms.push(tempN6.z);
-
-
-
-			newIndis.push(tmpIndex);
-			newIndis.push(tmpIndex + 5);
-			newIndis.push(tmpIndex + 4);
-
-			newIndis.push(tmpIndex + 5);
-			newIndis.push(tmpIndex + 1);
-			newIndis.push(tmpIndex + 3);
-
-			newIndis.push(tmpIndex + 4);
-			newIndis.push(tmpIndex + 3);
-			newIndis.push(tmpIndex + 2);
-
-			newIndis.push(tmpIndex + 4);
-			newIndis.push(tmpIndex + 5);
-			newIndis.push(tmpIndex + 3);
+			var bPatch = genBpatch(P1,P2,P3,N1,N2,N3);
+			var nPatch = genNpatch(P1,P2,P3,N1,N2,N3);		
 
 			
-			tmpIndex += 6;
+
+			//old verts new pos
+			var tempP = [];
+			var tempN = [];
+
+
+			tempP[0] = new PreGL.Vec3(0,0,0);
+			tempP[0].setVec3(getPos(1, 0, 0, bPatch));
+
+			tempN[0] = new PreGL.Vec3(0,0,0);
+			tempN[0].setVec3(getNorm(1, 0, 0, nPatch));
+		
+			tempP[1] = new PreGL.Vec3(0,0,0);
+			tempP[1].setVec3(getPos(0, 1, 0, bPatch));
+
+			tempN[1] = new PreGL.Vec3(0,0,0);
+			tempN[1].setVec3(getNorm(0, 1, 0, nPatch));
+
+			tempP[2] = new PreGL.Vec3(0,0,0);
+			tempP[2].setVec3(getPos(0, 0, 1, bPatch));
+
+
+			tempN[2] = new PreGL.Vec3(0,0,0);
+			tempN[2].setVec3(getNorm(0, 0, 1, nPatch));
+
+			// newNorms.push(tempN[0].x);
+			// newNorms.push(tempN[0].y);
+			// newNorms.push(tempN[0].z);
+			
+			
+			// newNorms.push(tempN[1].x);
+			// newNorms.push(tempN[1].y);
+			// newNorms.push(tempN[1].z);
+
+			// newNorms.push(tempN[2].x);
+			// newNorms.push(tempN[2].y);
+			// newNorms.push(tempN[2].z);
+
+
+			//?????
+			if(edge[ia] === 0)
+			{	
+				newVerts[ia * 3] = (tempP[0].x);
+				newVerts[ia * 3 + 1] = (tempP[0].y);
+				newVerts[ia * 3 + 2] = (tempP[0].z);
+
+				newNorms[ia * 3] = tempN[0].x;
+				newNorms[ia * 3 + 1] = tempN[0].y;
+				newNorms[ia * 3 + 2] = tempN[0].z;
+
+				edge[ia] = 1;
+
+
+			}
+			if(edge[ib] === 0)
+			{
+				newVerts[ib * 3] = (tempP[1].x);
+				newVerts[ib * 3 + 1] = (tempP[1].y);
+				newVerts[ib * 3 + 2] = (tempP[1].z);
+
+				newNorms[ib * 3] = tempN[1].x;
+				newNorms[ib * 3 + 1] = tempN[1].y;
+				newNorms[ib * 3 + 2] = tempN[1].z;
+
+				edge[ib] = 1;
+			}
+			if(edge[ic] === 0)
+			{
+				newVerts[ic * 3] = (tempP[2].x);
+				newVerts[ic * 3 + 1] = (tempP[2].y);
+				newVerts[ic * 3 + 2] = (tempP[2].z);
+
+				newNorms[ic * 3] = tempN[2].x;
+				newNorms[ic * 3 + 1] = tempN[2].y;
+				newNorms[ic * 3 + 2] = tempN[2].z;
+
+				edge[ic] = 1;
+			}
+
+
+			
+
+			// newVerts.push(tempP[1].x);
+			// newVerts.push(tempP[1].y);
+			// newVerts.push(tempP[1].z);
+						
+			// newVerts.push(tempP[2].x);
+			// newVerts.push(tempP[2].y);
+			// newVerts.push(tempP[2].z);
+
+			//new verts
+			tempP[3] = new PreGL.Vec3(0,0,0); 
+			tempP[3].setVec3(getPos(0, 0.5, 0.5, bPatch));
+
+			tempN[3] = new PreGL.Vec3(0,0,0);
+			tempN[3].setVec3(getNorm(0, 0.5, 0.5, nPatch));
+
+			var newEdge3 = edge2;
+			var index3;
+			for(var i in edge)
+			{
+				if(edge[i][0] !== edge2[0] || edge[i][1] !== edge2[1])
+				{
+					newVerts.push(tempP[3].x); 
+					newVerts.push(tempP[3].y); 
+					newVerts.push(tempP[3].z);
+
+					newNorms.push(tempN[3].x);
+					newNorms.push(tempN[3].y);
+					newNorms.push(tempN[3].z);
+			
+
+					edge.push(edge2);
+					index3 = newVerts.length - 1;
+				}
+				else
+				{
+					index3 = i;
+				}
+			}
+
+			tempP[4] = new PreGL.Vec3(0,0,0); 
+			tempP[4].setVec3(getPos(0.5, 0, 0.5, bPatch));
+			tempN[4] = new PreGL.Vec3(0,0,0);
+			tempN[4].setVec3(getNorm(0.5, 0, 0.5, nPatch));
+
+			//var newEdge4 = edge3;
+			var index4;
+			for(var i in edge)
+			{
+				if(edge[i][0] !== edge3[0] || edge[i][1] !== edge3[1])
+				{
+					newVerts.push(tempP[4].x); 
+					newVerts.push(tempP[4].y); 
+					newVerts.push(tempP[4].z);
+
+					newNorms.push(tempN[4].x);
+					newNorms.push(tempN[4].y);
+					newNorms.push(tempN[4].z);
+
+
+					edge.push(edge3);
+					index4 = newVerts.length - 1;
+				}
+				else
+				{
+					index4 = i;
+				}
+			}
+
+
+			tempP[5] = new PreGL.Vec3(0,0,0); 
+			tempP[5].setVec3(getPos(0.5, 0.5, 0, bPatch));
+			tempN[5] = new PreGL.Vec3(0,0,0);
+			tempN[5].setVec3(getNorm(0.5, 0.5, 0, nPatch));	
+
+			//var newEdge5 = edge1;
+			var index5;
+			for(var i in edge)
+			{
+				if(edge[i][0] !== edge1[0] || edge[i][1] !== edge1[1])
+				{
+					newVerts.push(tempP[5].x); 
+					newVerts.push(tempP[5].y); 
+					newVerts.push(tempP[5].z);
+					
+					newNorms.push(tempN[5].x);
+					newNorms.push(tempN[5].y);
+					newNorms.push(tempN[5].z);
+					
+					edge.push(edge1);
+					index5 = newVerts.length - 1;
+				}
+				else
+				{
+					index5 = i;
+				}
+			}
+			
+
+
+			newIndis.push(ia);
+			newIndis.push(index5);
+			newIndis.push(index4);
+
+			newIndis.push(index5);
+			newIndis.push(ib);
+			newIndis.push(index3);
+
+			newIndis.push(index4);
+			newIndis.push(index3);
+			newIndis.push(ic);
+
+			newIndis.push(index4);
+			newIndis.push(index5);
+			newIndis.push(index3);
+
+			
+			//tmpIndex += 6;
 
 
 
@@ -763,3 +895,5 @@ function calVerts(data, i)
   		return data;
 
 }
+
+
