@@ -401,11 +401,11 @@ function getNorm(u, v, w, npatch)
 	tmpN101.setVec3(npatch[5]);
 
 	norm.setVec3(tmpN200.scale( w*w ));
-	norm.setVec3(norm, tmpN020.scale( u*u ));
-	norm.setVec3(norm, tmpN002.scale( v*v ));
-	norm.setVec3(norm, tmpN110.scale( w*u ));
-	norm.setVec3(norm, tmpN011.scale( u*v ));
-	norm.setVec3(norm, tmpN101.scale( w*v ));
+	norm.add2(norm, tmpN020.scale( u*u ));
+	norm.add2(norm, tmpN002.scale( v*v ));
+	norm.add2(norm, tmpN110.scale( w*u ));
+	norm.add2(norm, tmpN011.scale( u*v ));
+	norm.add2(norm, tmpN101.scale( w*v ));
 
 	return norm;
 
@@ -947,7 +947,7 @@ function calVerts(data, i)
   		indices = newIndis.slice(0);
 
 
-
+  		//norms.fill(0);
   		data[0] = model;
   		data[1] = verts;
   		data[2] = norms;
