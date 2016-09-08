@@ -11,7 +11,7 @@ function pnTess(gl, path, level)
 	var indices = mesh.indices;
 
 
-	var nbseen = new Array(verts.length);
+	var nbseen = new Array(verts.length / 3);
 	nbseen.fill(0);
     var avgNormals = new Array(verts.length);
     
@@ -53,9 +53,9 @@ function pnTess(gl, path, level)
 
        		else
        		{
-       			avgNormals[cur_v * 3] = avgNormals[cur_v * 3] * (1.0 - 1,0 / nbseen[cur_v]) + normal.x * 1.0 / nbseen[cur_v];
-       			avgNormals[cur_v * 3 + 1] = avgNormals[cur_v * 3 + 1] * (1.0 - 1,0 / nbseen[cur_v]) + normal.y * 1.0 / nbseen[cur_v];
-       			avgNormals[cur_v * 3 + 2] = avgNormals[cur_v * 3 + 2] * (1.0 - 1,0 / nbseen[cur_v]) + normal.z * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3] = avgNormals[cur_v * 3] * (1.0 - 1.0 / nbseen[cur_v]) + normal.x * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 1] = avgNormals[cur_v * 3 + 1] * (1.0 - 1.0 / nbseen[cur_v]) + normal.y * 1.0 / nbseen[cur_v];
+       			avgNormals[cur_v * 3 + 2] = avgNormals[cur_v * 3 + 2] * (1.0 - 1.0 / nbseen[cur_v]) + normal.z * 1.0 / nbseen[cur_v];
        			var tmpAvg = new PreGL.Vec3(avgNormals[cur_v * 3], avgNormals[cur_v * 3 + 1], avgNormals[cur_v * 3 + 2]);
        			tmpAvg.normalize();
 
@@ -356,6 +356,8 @@ function getPos(u, v, w, bpatch)
 	var tmpB012 = new PreGL.Vec3(0,0,0);
 	var tmpB111 = new PreGL.Vec3(0,0,0);
 
+	
+
 	tmpB300.setVec3(bpatch[0]);
 	tmpB030.setVec3(bpatch[1]);
 	tmpB003.setVec3(bpatch[2]);
@@ -483,24 +485,24 @@ function calVerts(data, i)
 			var tempN = [];
 
 
-			tempP[0] = new PreGL.Vec3(0,0,0);
-			tempP[0].setVec3(getPos(1, 0, 0, bPatch));
-
-			tempN[0] = new PreGL.Vec3(0,0,0);
-			tempN[0].setVec3(getNorm(1, 0, 0, nPatch));
-		
 			tempP[1] = new PreGL.Vec3(0,0,0);
-			tempP[1].setVec3(getPos(0, 1, 0, bPatch));
+			tempP[1].setVec3(getPos(1, 0, 0, bPatch));
 
 			tempN[1] = new PreGL.Vec3(0,0,0);
-			tempN[1].setVec3(getNorm(0, 1, 0, nPatch));
-
+			tempN[1].setVec3(getNorm(1, 0, 0, nPatch));
+		
 			tempP[2] = new PreGL.Vec3(0,0,0);
-			tempP[2].setVec3(getPos(0, 0, 1, bPatch));
-
+			tempP[2].setVec3(getPos(0, 1, 0, bPatch));
 
 			tempN[2] = new PreGL.Vec3(0,0,0);
-			tempN[2].setVec3(getNorm(0, 0, 1, nPatch));
+			tempN[2].setVec3(getNorm(0, 1, 0, nPatch));
+
+			tempP[0] = new PreGL.Vec3(0,0,0);
+			tempP[0].setVec3(getPos(0, 0, 1, bPatch));
+
+
+			tempN[0] = new PreGL.Vec3(0,0,0);
+			tempN[0].setVec3(getNorm(0, 0, 1, nPatch));
 
 			// newNorms.push(tempN[0].x);
 			// newNorms.push(tempN[0].y);
@@ -569,10 +571,23 @@ function calVerts(data, i)
 
 			//new verts
 			tempP[3] = new PreGL.Vec3(0,0,0); 
-			tempP[3].setVec3(getPos(0, 0.5, 0.5, bPatch));
-
+			tempP[3].setVec3(getPos(0.5, 0.5, 0, bPatch));
 			tempN[3] = new PreGL.Vec3(0,0,0);
-			tempN[3].setVec3(getNorm(0, 0.5, 0.5, nPatch));
+			tempN[3].setVec3(getNorm(0.5, 0.5, 0, nPatch));	
+
+			
+			tempP[4] = new PreGL.Vec3(0,0,0); 
+			tempP[4].setVec3(getPos(0, 0.5, 0.5, bPatch));
+
+			tempN[4] = new PreGL.Vec3(0,0,0);
+			tempN[4].setVec3(getNorm(0, 0.5, 0.5, nPatch));
+
+
+
+			tempP[5] = new PreGL.Vec3(0,0,0); 
+			tempP[5].setVec3(getPos(0.5, 0, 0.5, bPatch));
+			tempN[5] = new PreGL.Vec3(0,0,0);
+			tempN[5].setVec3(getNorm(0.5, 0, 0.5, nPatch));
 
 			var newEdge3 = edge2;
 			var index3;
@@ -606,10 +621,6 @@ function calVerts(data, i)
 
 			
 
-			tempP[4] = new PreGL.Vec3(0,0,0); 
-			tempP[4].setVec3(getPos(0.5, 0, 0.5, bPatch));
-			tempN[4] = new PreGL.Vec3(0,0,0);
-			tempN[4].setVec3(getNorm(0.5, 0, 0.5, nPatch));
 
 			//var newEdge4 = edge3;
 			var index4;
@@ -645,11 +656,7 @@ function calVerts(data, i)
 
 			
 
-			tempP[5] = new PreGL.Vec3(0,0,0); 
-			tempP[5].setVec3(getPos(0.5, 0.5, 0, bPatch));
-			tempN[5] = new PreGL.Vec3(0,0,0);
-			tempN[5].setVec3(getNorm(0.5, 0.5, 0, nPatch));	
-
+			
 			//var newEdge5 = edge1;
 			var index5;
 			

@@ -40,7 +40,7 @@ window.onload = function() {
 
 	var pnTest;
 
-	var level = 1;
+	var level = 3;
 
 
 
@@ -71,7 +71,7 @@ window.onload = function() {
 		model = new subMesh(gl,sub, level);
 		luffy = SimpleMesh.loadObj(gl, luf);
 
-		pnTest = new pnTess(gl, sub, level);
+		pnTest = new pnTess(gl, objStr, level);
 
 		//pnTest = new subMesh(gl,sub, level);
 
@@ -217,8 +217,8 @@ window.onload = function() {
 			
 		//rabbit.draw(shader);
 
-		pnTest.draw(shader, gl.LINE_STRIP);
-		//pnTest.draw(shader);
+		//pnTest.draw(shader, gl.LINE_STRIP);
+		pnTest.draw(shader);
 		
 
 		modelViewMatrix = camera.getModelViewMatrix([-100, 0, 0], [0, 0, 1, 0], [1, 1, 1]);			
