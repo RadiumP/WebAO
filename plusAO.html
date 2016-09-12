@@ -586,6 +586,167 @@ window.onload = function() {
 </script>
 
 <script type="glsl" id="hbaoplus.frag">
+
+#define NUM_SAMPLE_DIRECTIONS  6 
+
+	// number of sample steps when raymarching along a direction
+	#define NUM_SAMPLE_STEPS       4 
+	#define PI 3.14159265
+	#define SmallScaleAOAmount    1
+	#define LargeScaleAOAmount    2
+
+	uniform sampler2D depthTex;
+	uniform sampler2D noiseTex; 
+	uniform float fov;
+	uniform vec2 noiseScale;
+
+	uniform float near;
+	uniform float far;            
+	
+	uniform float aspectRatio;    
+	uniform vec3 kernel[16];  
+
+	//modi
+	const float uAngleBias = 0.1;//0.523598776;
+	const float uIntensity = 5.9;
+	
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;
+	uniform mat4 viewMatrix;
+
+	uniform mat4 viewProjectionInverseMatrix;
+
+
+	varying vec3 vNormal;
+	varying vec2 vTexCoord;
+
+	//const float PI = 3.14159265;
+	
+
+	float unpackDepth(const in vec4 rgba_depth) {
+		const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+		float depth = dot(rgba_depth, bit_shift);
+		return depth;
+	}                
+
+	vec3 getViewRay(vec2 tc) {
+		float hfar = 2.0 * tan(fov/2.0) * far;
+		float wfar = hfar * aspectRatio;    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		return ray;                      
+	}         
+	           
+	//linear view space depth
+	float getDepth(vec2 coord) {                          
+		return unpackDepth(texture2D(depthTex, coord.xy));
+	}    
+
+	vec3 getPositionViewSpace(vec2 uv) {
+
+		vec3 origin = getDepth(uv) * getViewRay(uv);
+
+		//vec3 originVS = (modelViewMatrix * vec4(origin, 1.0)).xyz;
+
+		vec3 originVS = (viewMatrix * vec4(origin, 1.0)).xyz;
+		return origin;
+		//return originVS;
+	}
+
+
+
+	void main()
+	{	
+		vec2 screenPos = vec2(gl_FragCoord.x / 1280.0, gl_FragCoord.y / 960.0);
+		//screenPos = vTexCoord;
+		const float TWO_PI = 2.0 * PI;
+		vec3 originVS = getPositionViewSpace(screenPos);
+		vec3 normal = normalize(vNormal);
+
+		float radiusSS = 0.0; // radius of influence in screen space
+		float radiusWS = 0.0; // radius of influence in world space
+		  
+		radiusSS = 0.5;//sample radius
+
+		 
+	  	vec4 temp0 = viewProjectionInverseMatrix * vec4(0.0, 0.0, -1.0, 1.0);
+	    vec3 out0  = temp0.xyz;
+	    vec4 temp1 = viewProjectionInverseMatrix * vec4(radiusSS, 0.0, -1.0, 1.0);
+	    vec3 out1  = temp1.xyz;
+		  
+		 
+	    radiusWS = min(tan(radiusSS * fov / 2.0) * originVS.y / 2.0, length(out1 - out0));
+	 
+	  
+	    const float theta = TWO_PI / float(NUM_SAMPLE_DIRECTIONS);
+	    float cosTheta = cos(theta);
+	    float sinTheta = sin(theta);
+	    // matrix to create the sample directions
+  		mat2 deltaRotationMatrix = mat2(cosTheta, -sinTheta, sinTheta, cosTheta);
+  
+  		// step vector in view space
+  		vec2 deltaUV = vec2(1.0, 0.0) * (radiusSS / (float(NUM_SAMPLE_DIRECTIONS * NUM_SAMPLE_STEPS) + 1.0));
+  
+  
+  		vec3 sampleNoise    = texture2D(noiseTex, screenPos * noiseScale).xyz;
+  		sampleNoise.xy      = sampleNoise.xy * 2.0 - vec2(1.0);
+  		mat2 rotationMatrix = mat2(sampleNoise.x, -sampleNoise.y, 
+                             sampleNoise.y,  sampleNoise.x);
+	  
+	  
+  		deltaUV = rotationMatrix * deltaUV;
+  
+  		float jitter = sampleNoise.z;
+  		float occlusion = 0.0;
+  		float sAO = 0.0;
+  		float lAO = 0.0;
+	  		
+  		for (int i = 0; i < NUM_SAMPLE_DIRECTIONS; ++i) {
+    
+ 		   	deltaUV = deltaRotationMatrix * deltaUV;
+    
+   		 	vec2 sampleDirUV = deltaUV;
+   		 	float oldAngle   = uAngleBias;
+
+   		 	{
+      			vec2 sampleUV     = screenPos + (jitter + float(0)) * sampleDirUV;//snappedUV
+      			vec3 sampleVS     = getPositionViewSpace(sampleUV);//S
+      			vec3 sampleDirVS  = (sampleVS - originVS);
+      
+      // angle between fragment tangent and the sample computeAO()
+      			float gamma = (PI / 2.0) - acos(dot(vNormal, normalize(sampleDirVS)));
+      
+      			if (gamma > oldAngle) {
+        			float value = sin(gamma) - sin(oldAngle);
+        			sAO += value;
+        			oldAngle = gamma;
+        			//gl_FragColor = vec4(0.5, occlusion, occlusion, 1.0);
+        		}
+        	}
+    
+   		 	for (int j = 1; j < NUM_SAMPLE_STEPS; ++j) {
+      			vec2 sampleUV     = screenPos + (jitter + float(j)) * sampleDirUV;//snappedUV
+      			vec3 sampleVS     = getPositionViewSpace(sampleUV);//S
+      			vec3 sampleDirVS  = (sampleVS - originVS);
+      
+      // angle between fragment tangent and the sample computeAO()
+      			float gamma = (PI / 2.0) - acos(dot(vNormal, normalize(sampleDirVS)));
+      
+      			if (gamma > oldAngle) {
+        			float value = sin(gamma) - sin(oldAngle);
+        			lAO += value;
+        			oldAngle = gamma;
+        			//gl_FragColor = vec4(0.5, occlusion, occlusion, 1.0);
+        		}
+        	}
+  		}
+	  	occlusion = sAO * SmallScaleAOAmount + lAO * LargeScaleAOAmount;
+	  	occlusion = 1.0 - occlusion / float(NUM_SAMPLE_DIRECTIONS * NUM_SAMPLE_STEPS);
+	 	occlusion = clamp(pow(occlusion, 1.0 + uIntensity), 0.0, 1.0);
+	  	gl_FragColor = vec4(occlusion, occlusion, occlusion, 1.0);
+
+		
+  
+	}
 	
 	
 </script>

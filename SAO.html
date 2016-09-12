@@ -11,6 +11,7 @@
 <script type="text/javascript" src="js/seedrandom.js"></script>
 <script type="text/javascript" src="js/webgl-obj-loader.js"></script>
 <script type="text/javascript" src="js/SubD.js"></script>
+<script type="text/javascript" src="js/pnTess.js"></script>
 <script> 
 
 
@@ -37,7 +38,7 @@ window.onload = function() {
 	var kernel = [];
 	var model;
 
-	var level = 3;
+	var level = 1;
 
 
 	function setup() { 
@@ -63,9 +64,11 @@ window.onload = function() {
 		var luf = document.getElementById('my_cube2.obj').innerHTML;	
 
 		//load obj
-		rabbit = SimpleMesh.loadObj(gl,objStr);
-		model = new subMesh(gl, objStr, level);
-		luffy = new SimpleMesh.loadObj(gl, luf);
+		rabbit = new SimpleMesh.loadObj(gl,objStr);
+		//model = new subMesh(gl, objStr, level);
+		//luffy = new SimpleMesh.loadObj(gl, luf);
+		luffy = new pnTess(gl, luf, level);
+		pnTest = new pnTess(gl, objStr, level);
 
 		ssaoFSQuad = new FullScreenQuad(gl);
 		depthFbo = new FBO(gl, 1280, 960); 
@@ -197,7 +200,7 @@ window.onload = function() {
 			var normalMatrix = modelViewMatrix.invert().transpose();
 			shader.set("normalMatrix", normalMatrix);
 			//sphere.draw(shader);	
-			model.draw(shader);
+			//model.draw(shader);
 		}  		          
 
 
@@ -206,8 +209,8 @@ window.onload = function() {
 		normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);   
 			
-		rabbit.draw(shader);
-		
+		//rabbit.draw(shader);
+		pnTest.draw(shader);
 
 		modelViewMatrix = camera.getModelViewMatrix([-100, 0, 0], [0, 0, 1, 0], [1, 1, 1]);			
 		shader.set("modelViewMatrix", modelViewMatrix);                                         
@@ -753,12 +756,12 @@ window.onload = function() {
 <script type="glsl" id="sao.frag"> 
 
 // total number of samples at each fragment
-#define NUM_SAMPLES           6
+#define NUM_SAMPLES          11
 
-#define NUM_SPIRAL_TURNS      4
+#define NUM_SPIRAL_TURNS      7
 
 
-#define VARIATION             1
+#define VARIATION             0
 
 #define PI 3.14159265
 
@@ -781,12 +784,12 @@ window.onload = function() {
 
 	//modi
 	
-	const float uIntensity = 50.9;
+	const float uIntensity = 20.9;
 
 
 
 	const float uSampleRadiusWS = 1.0;
-	const float uBias = 0.1;//
+	const float uBias = 0.01;//
 
 
 	varying vec3 vNormal;
@@ -885,7 +888,7 @@ float sampleAO(vec2 uv, vec3 positionVS, vec3 normalVS, float sampleRadiusSS,
 
 void main() {
 
- vec2 screenPos = vec2(gl_FragCoord.x / 1280.0, gl_FragCoord.y / 960.0);
+  vec2 screenPos = vec2(gl_FragCoord.x / 1280.0, gl_FragCoord.y / 960.0);
  	//screenPos = vTexCoord;	
   vec3 originVS = getPositionVS(screenPos);
   

@@ -620,7 +620,7 @@ window.onload = function() {
  
 <script type="glsl" id="hbao.frag">  
 
-	#define NUM_SAMPLE_DIRECTIONS  6 
+	#define NUM_SAMPLE_DIRECTIONS  8 
 
 	// number of sample steps when raymarching along a direction
 	#define NUM_SAMPLE_STEPS       4 
@@ -639,7 +639,7 @@ window.onload = function() {
 
 	//modi
 	const float uAngleBias = 0.1;//0.523598776;
-	const float uIntensity = 5.9;
+	const float uIntensity = 2.9;
 	
 	uniform mat4 projectionMatrix;
 	uniform mat4 modelViewMatrix;
@@ -753,7 +753,7 @@ window.onload = function() {
         	}
   		}
 	  
-	  	occlusion = 1.0 - occlusion / float(NUM_SAMPLE_DIRECTIONS);
+	  	occlusion = 1.0 - occlusion / float(NUM_SAMPLE_DIRECTIONS * NUM_SAMPLE_STEPS);
 	 	occlusion = clamp(pow(occlusion, 1.0 + uIntensity), 0.0, 1.0);
 	  	gl_FragColor = vec4(occlusion, occlusion, occlusion, 1.0);
 
