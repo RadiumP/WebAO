@@ -63,7 +63,7 @@ window.onload = function() {
 
 		sphere = SimpleMesh.buildSphere(gl, 1);	 
 
-		var objStr = document.getElementById('my_cube1.obj').innerHTML
+		var objStr = document.getElementById('cow.obj').innerHTML
 		var luf = document.getElementById('my_cube2.obj').innerHTML;	
 		var sub = document.getElementById('t.obj').innerHTML
 		//load obj
@@ -245,186 +245,6 @@ window.onload = function() {
 
 </script>
 
-<!-- <script type="glsl" id="geoSSAO.vs"> 
-
-	attribute vec4 position;
-	attribute vec3 normal;
-	attribute vec2 texCoord;
-
-	uniform mat4 projectionMatrix;
-	uniform mat4 modelViewMatrix;  	
-	uniform mat4 normalMatrix;  	
-	uniform float near;
-	uniform float far;
-
-	varying vec3 FragPos;
-	varying vec2 TexCoords;
-	varying vec3 Normal;
-
-
-	void main()
-	{
-		vec4 viewPos = modelViewMatrix * position;
-		FragPos = viewPos.xyz;
-		gl_Position = projectionMatrix * viewPos;
-		
-		TexCoords = texCoord;
-		Normal = (normalMatrix * vec4 (normal, 1.0)).xyz;
-
-	}
-
-
-</script>
-
-<script type="glsl" id="geoSSAO.fs"> 
-
-	uniform mat4 projectionMatrix;
-	uniform mat4 modelViewMatrix;  	
-	uniform mat4 normalMatrix;  	
-	uniform float near;
-	uniform float far;
-
-	varying vec3 FragPos;
-	varying vec2 TexCoords;
-	varying vec3 Normal;
-
-	float LinearizeDepth(float depth)
-	{
-    	float z = depth * 2.0 - 1.0; // Back to NDC 
-    	return (2.0 * near * far) / (far + near - z * (far - near));	
-	}
-
-	void main()
-	{
-		gl_FragData[0].rgb = FragPos;
-		gl_FragData[0].a = LinearizeDepth(gl_FragCoord.z);
-	}
-
-
-</script> -->
-
-<!-- <script type="glsl" id="SSAO.vs"> 
-	attribute vec4 position;
-	attribute vec3 normal;
-	attribute vec2 texCoord;
-
-	uniform mat4 projectionMatrix;
-	uniform mat4 modelViewMatrix;  	
-	uniform mat4 normalMatrix;  	
-	uniform float near;
-	uniform float far;
-
-	varying vec2 vTexCoord;
-	varying vec3 vNormal;
-
-	void main()
-	{
-		gl_Position = projectionMatrix * modelViewMatrix * position;
-		vTexCoord = texCoord;
-		vNormal = normal;
-
-	}
-
-
-
-</script>
-
-<script type="glsl" id="SSAO.fs"> 
-	
-	uniform mat4 projectionMatrix;
-	uniform mat4 modelViewMatrix;  	
-	uniform mat4 normalMatrix;  	
-	uniform float near;
-	uniform float far;
-
-	uniform vec2 noiseScale;
-
-	uniform sampler2D depthTex;
-	uniform sampler2D noiseTex;  
-	
-	varying vec3 vNormal;
-
-	uniform float fov;
-	uniform float aspectRatio;    
-	uniform vec3 kernel[16];   
-	
-	varying vec2 vTexCoord;   
-
-	const int kernelSize = 16;  
-	const float radius = 0.1;   
-
-	void main()
-	{
-		vec3 fragPos = texture2D(depthTex, vTexCoord).xyz;
-		vec3 rvec = texture2D(noiseTex, vTexCoord * noiseScale).xyz;
-
-		vec3 normal = normalize(vNormal);   
-				
-		
-	    vec3 tangent = normalize(rvec - normal * dot(rvec, normal));
-	    vec3 bitangent = cross(normal, tangent);
-		mat3 tbn = mat3(tangent, bitangent, normal);        
-		
-		float occlusion = 0.0;
-		for(int i = 0; i < kernelSize; ++i) {    	 
-			vec3 sample = fragPos + (tbn * kernel[i]) * radius;
-		    vec4 offset = projectionMatrix * vec4(sample, 1.0);		
-			offset.xyz /= offset.w;
-			offset.xyz = offset.xyz * 0.5 + 0.5;        
-		    float sampleDepth = -sample.z;///far;
-		    
-		    float depthBufferValue = -texture2D(depthTex, offset.xy).w * far;
-
-						              
-			float range_check = abs(fragPos.z - depthBufferValue);
-			if (range_check < radius && depthBufferValue <= sampleDepth) {
-				occlusion +=  1.0;
-			}
-			
-		}         
-		   
-		occlusion = 1.0 - occlusion / float(kernelSize);
-                                   
-		vec3 lightPos = vec3(10.0, 10.0, 10.0);
-        vec3 L = normalize(lightPos);
-		float NdotL = abs(dot(normal, L));
-		vec3 diffuse = vec3(NdotL);
-		vec3 ambient = vec3(1.0);
-	    gl_FragColor.rgb = vec3((diffuse*0.2 + ambient*0.8) * occlusion);
-		//gl_FragColor.rgb = normal;
-	    gl_FragColor.a = 1.0;   
-
-	}
-
-
-
-</script>
- -->
-
-<!-- <script type="glsl" id="ssaoBlur.fs">
-	uniform sampler2D colorTex;
-	uniform vec2 texelSize;
-	varying vec2 vTexCoord; 
-
-	void main() 
-	{
-	   
-	   float result = 0.0;
-	   for (int x = 0; x < 4; ++x) 
-	   {
-	      for (int y = 0; y < 4; ++y) 
-	      {
-	         vec2 offset = (vec2(-2.0) + vec2(float(x), float(y))) * texelSize;
-	         result += texture2D(colorTex, vTexCoord + offset).r;
-	      }
-	   }
-	 
-   	gl_FragColor = vec4(result / 4.0 / 4.0);
-	}
-
-
-</script> 
- -->
 
 
 
@@ -638,7 +458,7 @@ window.onload = function() {
 	uniform vec3 kernel[16];  
 
 	//modi
-	const float uAngleBias = 0.1;//0.523598776;
+	const float uAngleBias = 0.523598776;
 	const float uIntensity = 5.9;
 	
 	uniform mat4 projectionMatrix;
@@ -763,6 +583,11 @@ window.onload = function() {
 
 
 
+</script>
+
+<script type="glsl" id="hbaoplus.frag">
+	
+	
 </script>
 
 
