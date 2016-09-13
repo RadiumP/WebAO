@@ -54,7 +54,7 @@ window.onload = function() {
 		//renderDepthShader = new Shader(gl, "geoSSAO.vs", "geoSSAO.fs"); 
 
 		//ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
-		ssaoShader = new Shader(gl, "ssao.vert", "hbao.frag");
+		ssaoShader = new Shader(gl, "ssao.vert", "hbaoplus.frag");
 
 		//ssaoShader = new Shader(gl, "SSAO.vs", "SSAO.fs");
 
@@ -63,7 +63,7 @@ window.onload = function() {
 
 		sphere = SimpleMesh.buildSphere(gl, 1);	 
 
-		var objStr = document.getElementById('cow.obj').innerHTML
+		var objStr = document.getElementById('my_cube1.obj').innerHTML
 		var luf = document.getElementById('my_cube2.obj').innerHTML;	
 		var sub = document.getElementById('t.obj').innerHTML
 		//load obj
@@ -440,7 +440,7 @@ window.onload = function() {
  
 <script type="glsl" id="hbao.frag">  
 
-	#define NUM_SAMPLE_DIRECTIONS  6 
+	#define NUM_SAMPLE_DIRECTIONS  8 
 
 	// number of sample steps when raymarching along a direction
 	#define NUM_SAMPLE_STEPS       4 
@@ -458,7 +458,7 @@ window.onload = function() {
 	uniform vec3 kernel[16];  
 
 	//modi
-	const float uAngleBias = 0.523598776;
+	const float uAngleBias = 0.1;
 	const float uIntensity = 5.9;
 	
 	uniform mat4 projectionMatrix;
@@ -573,7 +573,7 @@ window.onload = function() {
         	}
   		}
 	  
-	  	occlusion = 1.0 - occlusion / float(NUM_SAMPLE_DIRECTIONS);
+	  	occlusion = 1.0 - occlusion / float(NUM_SAMPLE_DIRECTIONS * NUM_SAMPLE_STEPS);
 	 	occlusion = clamp(pow(occlusion, 1.0 + uIntensity), 0.0, 1.0);
 	  	gl_FragColor = vec4(occlusion, occlusion, occlusion, 1.0);
 
@@ -587,13 +587,13 @@ window.onload = function() {
 
 <script type="glsl" id="hbaoplus.frag">
 
-#define NUM_SAMPLE_DIRECTIONS  6 
+#define NUM_SAMPLE_DIRECTIONS  8 
 
 	// number of sample steps when raymarching along a direction
 	#define NUM_SAMPLE_STEPS       4 
 	#define PI 3.14159265
-	#define SmallScaleAOAmount    1
-	#define LargeScaleAOAmount    2
+	#define SmallScaleAOAmount    2.0
+	#define LargeScaleAOAmount    1.0
 
 	uniform sampler2D depthTex;
 	uniform sampler2D noiseTex; 
