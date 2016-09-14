@@ -20,18 +20,18 @@
 window.onload = function() {  
 
 	//gui
+
+	var level = 0;
 	var gui = new dat.GUI();
 	var mode;
 	mode = {
 		AOMode: "SSAO",
-
+		TessLvl: 0,
 	}
 	var aoShader = 'SSAO';
 
-	gui.add(mode,'AOMode', ['SSAO', 'HBAO', 'SAO', 'HBAO+']).onChange(function(AO){
-		aoShader = AO;
-		setup();
-	});
+	
+	
 
 
 	var canvas = document.getElementById("canvas");
@@ -70,20 +70,22 @@ window.onload = function() {
 
 	var pnTest;
 
-	var level = 1;
-
-
-
-
-	function setup() { 
-		var supported = gl.getSupportedExtensions();                  
-		PreGLExt.log("Supported WebGL extensions: " + supported);
-
-		//shader  		
-		renderDepthShader = new Shader(gl, "showDepth.vert", "showDepth.frag"); 
-
-		//renderDepthShader = new Shader(gl, "geoSSAO.vs", "geoSSAO.fs"); 
-		if(aoShader === 'SSAO')
+	
+	gui.add(mode,'AOMode', ['SSAO', 'HBAO', 'SAO', 'HBAO+','No AO']).onChange(function(AO){
+		aoShader = AO;
+		loadAOShader();
+	});
+	gui.add(mode, 'TessLvl',['0',1,2,3]).onChange(function(lvl){
+		if(lvl === '0' )
+			level = 0;
+		else level = lvl;
+		
+		load();
+	});
+   
+   function loadAOShader()
+   {
+   	if(aoShader === 'SSAO')
 		{
 			ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
 			
@@ -100,12 +102,13 @@ window.onload = function() {
 		if(aoShader === 'SAO'){
 		ssaoShader = new Shader(gl, "ssao.vert", "sao.frag");
 		}	
+		if(aoShader === 'No AO'){
+		ssaoShader = new Shader(gl, "ssao.vert", "noao.frag");
+		}	
 	
-
-		blurShader = new Shader(gl, "baseTexture.vert", "blur.frag");
-		//blurShader = new Shader(gl, "SSAO.vs", "ssaoBlur.fs");
-
-		sphere = SimpleMesh.buildSphere(gl, 1);	 
+   }
+   function load()
+   {
 
 		var objStr = document.getElementById('my_cube1.obj').innerHTML
 		var luf = document.getElementById('my_cube2.obj').innerHTML;	
@@ -116,6 +119,25 @@ window.onload = function() {
 		luffy = SimpleMesh.loadObj(gl, luf);
 
 		pnTest = new pnTess(gl, objStr, level);
+
+   }
+
+
+	function setup() { 
+		var supported = gl.getSupportedExtensions();                  
+		PreGLExt.log("Supported WebGL extensions: " + supported);
+
+		//shader  		
+		renderDepthShader = new Shader(gl, "showDepth.vert", "showDepth.frag"); 
+
+		//renderDepthShader = new Shader(gl, "geoSSAO.vs", "geoSSAO.fs"); 
+		
+
+		blurShader = new Shader(gl, "baseTexture.vert", "blur.frag");
+		//blurShader = new Shader(gl, "SSAO.vs", "ssaoBlur.fs");
+
+		loadAOShader();
+		load();
 
 		//pnTest = new subMesh(gl,sub, level);
 
@@ -496,6 +518,40 @@ window.onload = function() {
 	}
 </script> 
 
+<script type="glsl" id="noao.frag">  
+	uniform sampler2D depthTex;
+	uniform sampler2D noiseTex;  
+	varying vec3 vNormal;
+	uniform mat4 projectionMatrix;
+	
+	uniform vec2 noiseScale;
+	uniform float near;
+	uniform float far;            
+	uniform float fov;
+	uniform float aspectRatio;    
+	uniform vec3 kernel[16];   
+	uniform mat4 viewProjectionInverseMatrix;
+	
+	varying vec2 vTexCoord;   
+
+	
+	
+	void main() {          
+		vec2 screenPos = vec2(gl_FragCoord.x / 1280.0, gl_FragCoord.y / 960.0);		                 
+		//screenPos.y = 1.0 - screenPos.y;   
+		
+		
+		   
+		
+		float occlusion = 0.0;
+		
+		occlusion = 1.0 - occlusion ;
+     
+	    gl_FragColor.rgb = vec3( occlusion);
+		//gl_FragColor.rgb = normal;
+	    gl_FragColor.a = 1.0;   
+	}
+</script>
 <script type="glsl" id="baseTexture.vert">
 	attribute vec4 position;
 	attribute vec2 texCoord;

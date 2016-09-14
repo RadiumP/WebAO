@@ -48,6 +48,9 @@ window.onload = function() {
 		var supported = gl.getSupportedExtensions();                  
 		PreGLExt.log("Supported WebGL extensions: " + supported);
 
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);						
+		gl.enable(gl.DEPTH_TEST);   
 		//shader  		
 		renderDepthShader = new Shader(gl, "showDepth.vert", "showDepth.frag"); 
 

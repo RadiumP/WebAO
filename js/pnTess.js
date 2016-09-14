@@ -77,7 +77,7 @@ function pnTess(gl, path, level)
 
 		model.addAttrib("position", mesh.vertices);
   		model.addAttrib("normal", norms);
-  		model.addAttrib("texCoord", mesh.textures, 2);
+  		//model.addAttrib("texCoord", mesh.textures, 2);
   		model.setIndices(mesh.indices);
 
   		
