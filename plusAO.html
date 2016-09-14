@@ -19,6 +19,18 @@ window.onload = function() {
 	var canvas = document.getElementById("canvas");
 	var gl = PreGL.WebGL.getContext(canvas);
 
+
+	document.onkeydown = handleKeyDown;
+    document.onkeyup = handleKeyUp;
+
+
+    //camera
+	var cameraX, cameraY, cameraZ;
+	var targetX, targetY, targetZ;
+	var move = 0;
+	var yawRate = 0;	
+
+
 	var time = 0;  
 	var sphere;   
 	var plane;    		
@@ -40,7 +52,7 @@ window.onload = function() {
 
 	var pnTest;
 
-	var level = 2;
+	var level = 1;
 
 
 
@@ -114,12 +126,31 @@ window.onload = function() {
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);						
 		gl.enable(gl.DEPTH_TEST);      
 		
-		var cameraPos = new PreGL.Vec3(4 * Math.cos(time / 20.0), 0, 4 * Math.sin(time / 20.0));
-		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 2000, cameraPos);
+
+		handleKeys();
+
+		cameraX = -4;
+		cameraY = 0;
+		cameraZ = 4;
+
+		targetX = 0;
+		targetY = 0;
+		targetZ = 0;
+
+		var lookAt = new PreGL.Vec3(targetX - cameraX, targetY - cameraY, targetZ - cameraZ);
+		//var r = Math.sqrt(lookAt.dot(lookAt));
+		
+
+		var cameraPos = new PreGL.Vec3(cameraX + move, cameraY, cameraZ);//controls
+		var targetPos = new PreGL.Vec3(lookAt.x * Math.cos(yawRate) - lookAt.z * Math.sin(yawRate) + cameraX, targetY, lookAt.x * Math.sin(yawRate) + lookAt.z * Math.cos(yawRate) + cameraZ);
+		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 2000, cameraPos, targetPos);
+		//target (0,0,0)
 		
 		PreGLExt.once("camera frustum", function() {
 		   var frustumCorners = camera.getFrustumCorners();
 		});
+
+
 
 	    depthFbo.bind();		
 		gl.clearColor(0, 0, 0, 1);
@@ -183,34 +214,10 @@ window.onload = function() {
 		shader.set("near", camera.near);
 		shader.set("far", camera.far);
 
-		Math.seedrandom('spheres');        
-		for(var i=0; i<20; i++) {        
-			var scale = 1.0 + Math.random() * 1.0;                         
-			var x = (Math.random() - 0.5) * 2.0;
-			var y = (Math.random() - 0.5) * 2.0;
-			var z = (Math.random() - 0.5) * 2.0;
-			if (i<0) {
-				var pos = new PreGL.Vec3(x, y, z);
-				pos = pos.normalized().scaled(8);
-				x = pos.x;
-				y = pos.y;
-				z = pos.z;   
-				scale = 3;
-			}   
-			else {
-				x = Math.cos(time + x);    
-				y = Math.sin(time + y);  				
-			}
-			var modelViewMatrix = camera.getModelViewMatrix([x, y, z], null, [scale, scale, scale]);			
-			shader.set("modelViewMatrix", modelViewMatrix);                                         
-			var normalMatrix = modelViewMatrix.invert().transpose();
-			shader.set("normalMatrix", normalMatrix);
-			//sphere.draw(shader);	
-			//model.draw(shader);
-		}  		          
+		          
 
 
-		modelViewMatrix = camera.getModelViewMatrix([1, 0, 0], [Math.PI, 0, 1, 0], [1, 1, 1]);			
+		modelViewMatrix = camera.getModelViewMatrix([1, 0, 0], [0, 0, 1, 0], [1, 1, 1]);			
 		shader.set("modelViewMatrix", modelViewMatrix);                                         
 		normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);   
@@ -236,8 +243,61 @@ window.onload = function() {
 	function start() {
 		//setInterval(draw, 1000/60);
 		requestAnimFrame(draw, canvas);
-	}       
-	setup();     		
+
+		
+	}      
+
+	var currentlyPressedKeys = {};
+
+    function handleKeyDown(event) {
+        currentlyPressedKeys[event.keyCode] = true;
+        console.log("down");
+    }
+
+
+    function handleKeyUp(event) {
+        currentlyPressedKeys[event.keyCode] = false;
+    }
+ 
+
+	function handleKeys() {
+        if (currentlyPressedKeys[33]) {
+            // Page Up
+            pitchRate = 0.1;
+        } else if (currentlyPressedKeys[34]) {
+            // Page Down
+            pitchRate = -0.1;
+        } else {
+            pitchRate = 0;
+        }
+
+        if (currentlyPressedKeys[37] || currentlyPressedKeys[65]) {
+            // Left cursor key or A
+            yawRate += Math.PI / 16.0;
+        } else if (currentlyPressedKeys[39] || currentlyPressedKeys[68]) {
+            // Right cursor key or D
+            yawRate -= Math.PI / 16.0;
+        } else {
+            //yawRate = 0;
+        }
+
+        if (currentlyPressedKeys[38] || currentlyPressedKeys[87]) {
+            // Up cursor key or W
+            move += 0.5;
+        } else if (currentlyPressedKeys[40] || currentlyPressedKeys[83]) {
+            // Down cursor key
+            move -= 0.5;
+        } else {
+            speed = 0;
+        }
+
+    }
+
+
+
+	setup();   
+
+		
 	start();
 
 }
@@ -68907,7 +68967,7 @@ f 86/86/500 85/85/500 35/35/500
 <style type="text/css">
 	body {
 		margin: 0;  
-		background: #000;
+		background: #222;
 	}        
 	#canvas {    
 		width: 1024px;
