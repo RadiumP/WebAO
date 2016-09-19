@@ -37,6 +37,61 @@ window.onload = function() {
 	var canvas = document.getElementById("canvas");
 	var gl = PreGL.WebGL.getContext(canvas);
 
+	var havePointerLock = 'pointerLockElement' in document ||
+    'mozPointerLockElement' in document ||
+    'webkitPointerLockElement' in document;
+
+	canvas.requestPointerLock = canvas.requestPointerLock ||
+			     canvas.mozRequestPointerLock ||
+			     canvas.webkitRequestPointerLock;
+	// Ask the browser to lock the pointer
+	
+
+	canvas.onclick = function() {
+  		canvas.requestPointerLock();
+	}
+
+
+	// Ask the browser to release the pointer
+	document.exitPointerLock = document.exitPointerLock ||
+				document.mozExitPointerLock ||
+				document.webkitExitPointerLock;
+	//document.exitPointerLock();
+
+	// Hook pointer lock state change events for different browsers
+	document.addEventListener('pointerlockchange', lockChangeAlert, false);
+	document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+	function lockChangeAlert() {
+	  if(document.pointerLockElement === canvas ||
+	  document.mozPointerLockElement === canvas) {
+	    console.log('The pointer lock status is now locked');
+	    document.addEventListener("mousemove", canvasLoop, false);
+	  } else {
+	    console.log('The pointer lock status is now unlocked');  
+	    document.removeEventListener("mousemove", canvasLoop, false);
+	  }
+	}
+
+	var yaw = 0;
+	var pitch = 0;
+
+	function canvasLoop(e) {
+	  var movementX = e.movementX ||
+	      e.mozMovementX          ||
+	      0;
+
+	  var movementY = e.movementY ||
+	      e.mozMovementY      ||
+	      0;
+	 yaw += movementX;
+	 pitch -= movementY;
+	   
+}
+	var front = new  PreGL.Vec3(0,0,0);
+	
+	var right = new  PreGL.Vec3(0,0,0);
+	
 
 	document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
@@ -45,7 +100,7 @@ window.onload = function() {
     //camera
 	var cameraX, cameraY, cameraZ;
 	var targetX, targetY, targetZ;
-	var move = 0;
+	var move = new PreGL.Vec3(0,0,0);
 	var yawRate = 0;	
 
 
@@ -191,12 +246,18 @@ window.onload = function() {
 		targetY = 0;
 		targetZ = 0;
 
+		front = new PreGL.Vec3(Math.cos(yaw * Math.PI / 180.0 ) * Math.cos(pitch * Math.PI / 180.0 ), Math.sin(pitch * Math.PI / 180.0 ), Math.sin(yaw * Math.PI / 180.0 ) * Math.cos(pitch * Math.PI / 180.0 ));
+		var up = new PreGL.Vec3(0, 1, 0);
+		right.cross2(front, up);
 		var lookAt = new PreGL.Vec3(targetX - cameraX, targetY - cameraY, targetZ - cameraZ);
 		//var r = Math.sqrt(lookAt.dot(lookAt));
-		
+	
 
-		var cameraPos = new PreGL.Vec3(targetX + move - (lookAt.x * Math.cos(yawRate) - lookAt.z * Math.sin(yawRate) ) , cameraY, targetZ - (lookAt.x * Math.sin(yawRate) + lookAt.z * Math.cos(yawRate)) );//controls
-		var targetPos = new PreGL.Vec3(targetX, targetY,  targetZ);
+		var cameraPos = new PreGL.Vec3(cameraX, cameraY, cameraZ);//controls
+		cameraPos.add2(cameraPos, move);
+		var targetPos = new PreGL.Vec3();
+		targetPos.add2(front, cameraPos);
+		console.log(front);
 		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 2000, cameraPos, targetPos);
 		//target (0,0,0)
 		
@@ -327,20 +388,24 @@ window.onload = function() {
 
         if (currentlyPressedKeys[37] || currentlyPressedKeys[65]) {
             // Left cursor key or A
-            yawRate += Math.PI / 32.0;
+            //yawRate += Math.PI / 32.0;
+            move.sub2(move, right);
         } else if (currentlyPressedKeys[39] || currentlyPressedKeys[68]) {
             // Right cursor key or D
-            yawRate -= Math.PI / 32.0;
+            //yawRate -= Math.PI / 32.0;
+             move.add2(move, right);
         } else {
             //yawRate = 0;
         }
 
         if (currentlyPressedKeys[38] || currentlyPressedKeys[87]) {
             // Up cursor key or W
-            move += 0.2;
+            var temp = front.scaled(0.5);
+            move.add2(move,temp);
         } else if (currentlyPressedKeys[40] || currentlyPressedKeys[83]) {
             // Down cursor key
-            move -= 0.2;
+            var temp = front.scaled(0.5);
+            move.sub2(move,temp);
         } else {
             speed = 0;
         }
