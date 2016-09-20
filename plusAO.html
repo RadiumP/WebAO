@@ -65,10 +65,10 @@ window.onload = function() {
 	function lockChangeAlert() {
 	  if(document.pointerLockElement === canvas ||
 	  document.mozPointerLockElement === canvas) {
-	    console.log('The pointer lock status is now locked');
+	   // console.log('The pointer lock status is now locked');
 	    document.addEventListener("mousemove", canvasLoop, false);
 	  } else {
-	    console.log('The pointer lock status is now unlocked');  
+	   // console.log('The pointer lock status is now unlocked');  
 	    document.removeEventListener("mousemove", canvasLoop, false);
 	  }
 	}
@@ -168,11 +168,14 @@ window.onload = function() {
 		var objStr = document.getElementById('my_cube1.obj').innerHTML
 		var luf = document.getElementById('my_cube2.obj').innerHTML;	
 		var sub = document.getElementById('t.obj').innerHTML
-		//load obj
-		rabbit = SimpleMesh.loadObj(gl,objStr);
-		
-		luffy = SimpleMesh.loadObj(gl, luf);
 
+
+		//load obj
+		//rabbit = SimpleMesh.loadObj(gl,objStr);
+		rabbit = new pnTess(gl, sub, level);
+
+		luffy = SimpleMesh.loadObj(gl, luf);
+		
 		pnTest = new pnTess(gl, objStr, level);
 
    }
@@ -257,7 +260,7 @@ window.onload = function() {
 		cameraPos.add2(cameraPos, move);
 		var targetPos = new PreGL.Vec3();
 		targetPos.add2(front, cameraPos);
-		console.log(front);
+		//sle.log(front);
 		var camera = new PerspectiveCamera(60, depthFbo.width/depthFbo.height, 1, 2000, cameraPos, targetPos);
 		//target (0,0,0)
 		
@@ -329,17 +332,36 @@ window.onload = function() {
 		shader.set("near", camera.near);
 		shader.set("far", camera.far);
 
-		          
-
+		Math.seedrandom('spheres');
+		for(var i=0; i<300; i++) {        
+			var scale = 1 + Math.random() * 1;                         
+			var x = (Math.random() - 0.5) * 20.0;
+			var y = (Math.random() - 0.5) * 20.0;
+			var z = (Math.random() - 0.5) * 20.0;
+			if (i<0) {
+				var pos = new PreGL.Vec3(x, y, z);
+				pos = pos.normalized().scaled(8);
+				x = pos.x;
+				y = pos.y;
+				z = pos.z;   
+				scale = 3;
+			}   
+			else {
+				x = Math.cos(time + 1000* x);    
+				y = Math.sin(time + 1000* y);  				
+			}
+			var modelViewMatrix = camera.getModelViewMatrix([x-10, y, z], null, [1, 1, 1]);			
+			shader.set("modelViewMatrix", modelViewMatrix);                                         
+			var normalMatrix = modelViewMatrix.invert().transpose();
+			shader.set("normalMatrix", normalMatrix);
+			rabbit.draw(shader);	
+		}  		          
+		//strip
 
 		modelViewMatrix = camera.getModelViewMatrix([1, 0, 0], [Math.PI / 2 * time, 0, 1, 0], [1, 1, 1]);			
 		shader.set("modelViewMatrix", modelViewMatrix);                                         
 		normalMatrix = modelViewMatrix.invert().transpose();
 		shader.set("normalMatrix", normalMatrix);   
-			
-		//rabbit.draw(shader);
-		//strip
-
 		//pnTest.draw(shader, gl.LINE_STRIP);
 		pnTest.draw(shader);
 		
@@ -69285,6 +69307,8 @@ f 227/227/499 226/226/499 236/236/499
 f 86/86/500 85/85/500 35/35/500
 
 </script>
+
+
 
 
 
