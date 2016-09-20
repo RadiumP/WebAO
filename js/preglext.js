@@ -442,11 +442,11 @@ SimpleMesh.loadObj = function(gl, path)
 {
   var model = new SimpleMesh(gl);
 
-  var mesh = new OBJ.Mesh(path);// data saved
+  var mesh = new SOBJ.MeshO(path);// data saved
   //OBJ.initMeshBuffers(gl, mesh);// buffer saved
   model.addAttrib("position", mesh.vertices);
   model.addAttrib("normal", mesh.vertexNormals);
-  model.addAttrib("texCoord", mesh.textures, 2);
+  //model.addAttrib("texCoord", mesh.textures, 2);
   model.setIndices(mesh.indices);
 
   return model;

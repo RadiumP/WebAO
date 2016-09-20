@@ -1,12 +1,12 @@
 (function (scope, undefined) {
   'use strict';
 
-  var OBJ = {};
+  var SOBJ = {};
 
   if (typeof module !== 'undefined') {
-    module.exports = OBJ;
+    module.exports = SOBJ;
   } else {
-    scope.OBJ = OBJ;
+    scope.SOBJ = SOBJ;
   }
 
   /**
@@ -20,7 +20,7 @@
    *
    * @param {String} objectData a string representation of an OBJ file with newlines preserved.
    */
-  OBJ.Mesh = function (objectData) {
+  SOBJ.MeshO = function (objectData) {
     /*
      The OBJ file format does a sort of compression when saving a model in a
      program like Blender. There are at least 3 sections (4 including textures)
@@ -91,8 +91,6 @@
      */
     var verts = [], vertNormals = [], textures = [], unpacked = {};
     // unpacking stuff
-    unpacked.faces = [];
-    unpacked.cp = [];
     unpacked.verts = [];
     unpacked.norms = [];
     unpacked.textures = [];
@@ -181,11 +179,6 @@
 
                  This same process is repeated for verts and textures.
                  */
-                 //face 
-                //unpacked.faces.push(vertex[0] - 1);
-                // unpacked.faces.push(+(vertex[0] - 1) * 3 + 1);
-                // unpacked.faces.push(+(vertex[0] - 1) * 3 + 2);
-
                 // vertex position
                 unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
                 unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
@@ -199,12 +192,11 @@
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 0]);
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 1]);
                 unpacked.norms.push(+vertNormals[(vertex[2] - 1) * 3 + 2]);
-                // // add the newly created vertex to the list of indices
-                // unpacked.hashindices[elements[j]] = unpacked.index;
-                // unpacked.indices.push(unpacked.index);
-                // // increment the counter
-                // unpacked.index += 1;
-                unpacked.indices.push(vertex[0] - 1);
+                // add the newly created vertex to the list of indices
+                unpacked.hashindices[elements[j]] = unpacked.index;
+                unpacked.indices.push(unpacked.index);
+                // increment the counter
+                unpacked.index += 1;
             }
             if(j === 3 && quad) {
                 // add v0/t0/vn0 onto the second triangle
@@ -213,21 +205,10 @@
         }
       }
     }
-
-    var v = [];  
-    for(var i = 0; i < verts.length; i++)
-    {
-      v.push(+verts[i]);
-    }
-    
-    //this.vertices = unpacked.verts;
-    //this.vertexNormals = unpacked.norms;
-    this.vertices = v;
-    this.vertexNormals = vertNormals;
+    this.vertices = unpacked.verts;
+    this.vertexNormals = unpacked.norms;
     this.textures = unpacked.textures;
     this.indices = unpacked.indices;
-    this.faces = unpacked.faces;
-    this.cp = verts;
   }
 
   var Ajax = function(){
@@ -263,7 +244,7 @@
    * @param {Object} meshes In case other meshes are loaded separately or if a previously declared variable is desired to be used, pass in a (possibly empty) json object of the pattern: { '<mesh_name>': OBJ.Mesh }
    *
    */
-  OBJ.downloadMeshes = function (nameAndURLs, completionCallback, meshes){
+  SOBJ.downloadMeshes = function (nameAndURLs, completionCallback, meshes){
     // the total number of meshes. this is used to implement "blocking"
     var semaphore = Object.keys(nameAndURLs).length;
     // if error is true, an alert will given
@@ -389,14 +370,14 @@
    *     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
    *     gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
    */
-  OBJ.initMeshBuffers = function( gl, mesh ){
+  SOBJ.initMeshBuffers = function( gl, mesh ){
     mesh.normalBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertexNormals, 3);
     mesh.textureBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.textures, 2);
     mesh.vertexBuffer = _buildBuffer(gl, gl.ARRAY_BUFFER, mesh.vertices, 3);
     mesh.indexBuffer = _buildBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, mesh.indices, 1);
   }
 
-  OBJ.deleteMeshBuffers = function( gl, mesh ){
+  SOBJ.deleteMeshBuffers = function( gl, mesh ){
     gl.deleteBuffer(mesh.normalBuffer);
     gl.deleteBuffer(mesh.textureBuffer);
     gl.deleteBuffer(mesh.vertexBuffer);
