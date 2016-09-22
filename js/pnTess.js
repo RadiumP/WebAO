@@ -407,6 +407,7 @@ function getNorm(u, v, w, npatch)
 	norm.add2(norm, tmpN011.scale( u*v ));
 	norm.add2(norm, tmpN101.scale( w*v ));
 
+	norm.normalize();
 	return norm;
 
 
