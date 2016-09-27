@@ -130,7 +130,24 @@ function genNoiseTextureRGBA(gl, w, h) {
   texture.width = w;
   texture.height = h; 
   return texture;
-}                                                                    
+}  
+
+//jitter
+
+function genJitter(gl,w,h,randEle, max ) {
+  var jitter = new Array(randEle * max);
+  var hbaoRandom = new PreGL.Vec4();
+  float Rand1 = rng.randExc();
+  float Rand2 = rng.randExc();
+
+  // Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
+  float Angle = 2.f * nv_pi * Rand1 / numDir;
+  hbaoRandom.x = cosf(Angle);
+  hbaoRandom.y = sinf(Angle);
+  hbaoRandom.z = Rand2;
+  hbaoRandom.w = 0;
+
+}                                                                 
 
 //--------------------------------------------------------------------                                                     
 

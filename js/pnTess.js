@@ -417,9 +417,9 @@ function getNorm(u, v, w, npatch)
 
 function calVerts(data, i)
 {		
-	var newVerts = [];//new Float32Array(3*65000);
-	var newNorms = [];//new Float32Array(3*65000);
-	var newIndis = [];//0.0;
+	var newVerts = [];
+	var newNorms = [];
+	var newIndis = [];//new Array(205000);
 
 
 
@@ -434,6 +434,7 @@ function calVerts(data, i)
 
 	newVerts = verts.slice(0); //question it
 	newNorms = norms.slice(0);
+	//newIndis.fill(0);
 
 	//edge 
 	var edge = new Array(verts.length / 3);//question it
