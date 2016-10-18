@@ -1,0 +1,230 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<title></title>
+<meta charset="UTF-8">                             
+<!--
+<script type="text/javascript" src="js/webglinspector/core/embed2.js"></script>
+-->
+<script type="text/javascript" src="js/pregl.js"></script>
+<script type="text/javascript" src="js/preglext.js"></script>
+<script type="text/javascript" src="js/seedrandom.js"></script>
+<script type="text/javascript" src="js/webgl-obj-loader.js"></script>
+
+<script type="text/javascript" src="js/simpleObj.js"></script>
+
+
+<script type="text/javascript" src="js/pnTess.js"></script>
+<script type="text/javascript" src="js/dat.gui.js"></script>
+
+<script >
+window.onload = function() {
+	//gui
+	var level = 0;
+	var gui = new dat.GUI();
+	var mode;
+	mode = {
+		AOMode: "HBAO+",
+		TessLvl:0,
+	}
+	var aoShader = 'HBAO+';
+
+	var canvas = document.getElementById("canvas");
+	var gl = PreGL.WebGL.getContext(canvas);
+
+	var havePointerLock = 'pointerLockElement' in document ||
+    'mozPointerLockElement' in document ||
+    'webkitPointerLockElement' in document;
+
+	canvas.requestPointerLock = canvas.requestPointerLock ||
+			     canvas.mozRequestPointerLock ||
+			     canvas.webkitRequestPointerLock;
+
+
+	canvas.onclick = function() {
+  		canvas.requestPointerLock();
+	}
+
+
+	// Ask the browser to release the pointer
+	document.exitPointerLock = document.exitPointerLock ||
+				document.mozExitPointerLock ||
+				document.webkitExitPointerLock;
+	//document.exitPointerLock();
+
+	// Hook pointer lock state change events for different browsers
+	document.addEventListener('pointerlockchange', lockChangeAlert, false);
+	document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+	function lockChangeAlert() {
+	  if(document.pointerLockElement === canvas ||
+	  document.mozPointerLockElement === canvas) {
+	   // console.log('The pointer lock status is now locked');
+	    document.addEventListener("mousemove", canvasLoop, false);
+	  } else {
+	   // console.log('The pointer lock status is now unlocked');  
+	    document.removeEventListener("mousemove", canvasLoop, false);
+	  }
+	}
+
+	var yaw = 0;
+	var pitch = 0;
+
+	function canvasLoop(e) {
+	  	var movementX = e.movementX ||
+	      e.mozMovementX          ||
+	      0;
+
+	  	var movementY = e.movementY ||
+	      e.mozMovementY      ||
+	      0;
+	 	yaw += movementX;
+	 	pitch -= movementY;
+	   
+	}
+	var front = new  PreGL.Vec3(0,0,0);
+	
+	var right = new  PreGL.Vec3(0,0,0);
+	
+
+	document.onkeydown = handleKeyDown;
+    document.onkeyup = handleKeyUp;
+
+
+    //camera
+	var cameraX, cameraY, cameraZ;
+	var targetX, targetY, targetZ;
+	var move = new PreGL.Vec3(0,0,0);
+	var yawRate = 0;	
+
+
+	var time = 0;  		     
+
+	//
+	var MAX_SAMPLES = 8;
+	var HBAO_RANDOM_ELEMENTS = 16;
+
+	//shader
+	var shaderLinearDepth;
+	var shaderViewNormal;
+	var shaderHBAO;
+	var shaderBlur;
+	var shaderSSAO;
+	var shaderDeinterleave;
+	var shaderReinterleave;
+
+	//FBO
+	var sceneFBO;
+	var depthlinearFBO;
+	var viewnormalFBO;
+	var hbao_calcFBO;
+	var hbao2_deinterleaveFBO;
+	var hbao2_calcFBO;
+
+	//texture
+	var colorTex;
+	var depthstencilTex;
+	var depthlinearTex;
+	var viewnormalTex;
+	var hbaoresultTex;
+	var hbaoblurTex;
+	var hbaorandomTex;
+	var hbaorandomviewTex = new Array(MAX_SAMPLES); 
+	var hbao2deptharrayTex;
+	var hbao2depthviewTex = new Array(HBAO_RANDOM_ELEMENTS);
+	var hbao2resultarrayTex;
+
+	var noiseTexture;
+	var kernel = [];
+
+
+	var ssaoFSQuad; //renderquad   
+
+	var prevTime = 0;  
+	var fpsFrames = 0;
+	var fpsTime = 0;
+	var fps = 0; 
+	
+	var model;
+	var pnTest;
+
+	gui.add(mode,'AOMode', ['SSAO', 'HBAO', 'SAO', 'HBAO+','No AO']).onChange(function(AO){
+		aoShader = AO;
+		loadAOShader();
+	});
+	gui.add(mode, 'TessLvl',['0',1,2,3]).onChange(function(lvl){
+		if(lvl === '0' )
+			level = 0;
+		else level = lvl;
+		
+		load();
+	});
+   	
+
+   	function loadAOShader()
+   {
+  //  		if(aoShader === 'SSAO')
+		// {
+		// 	ssaoShader = new Shader(gl, "ssao.vert", "ssao.frag");
+			
+		// }	
+		if(aoShader === 'HBAO+')
+		{
+			ssaoShader = new Shader(gl, "ssao.vert", "hbaoplus.frag");
+			
+		}
+		// if(aoShader === 'HBAO'){
+		// ssaoShader = new Shader(gl, "ssao.vert", "hbao.frag");
+
+		// }
+
+		// if(aoShader === 'SAO'){
+		// ssaoShader = new Shader(gl, "ssao.vert", "sao.frag");
+		// }	
+		// if(aoShader === 'No AO'){
+		// ssaoShader = new Shader(gl, "ssao.vert", "noao.frag");
+		// }	
+	
+   }
+
+   function load()
+   {
+
+		var objStr = document.getElementById('sponza.obj').innerHTML;
+		//var luf = document.getElementById('sponza.obj').innerHTML;	
+		//var sub = document.getElementById('my_cube1.obj').innerHTML
+
+
+		//load obj
+		//rabbit = SimpleMesh.loadObj(gl,objStr);
+		//rabbit = new pnTess(gl, sub, level);
+
+		//luffy = SimpleMesh.loadObj(gl,luf);
+		//luffy = new pnTess(gl, luf, level);
+		
+		pnTest = new pnTess(gl, objStr, level);
+
+   }
+
+    function setup() {
+
+    	var supported = gl.getSupportedExtensions();
+		gl.getExtension("OES_standard_derivatives");                  
+		PreGLExt.log("Supported WebGL extensions: " + supported);
+
+		//linear
+		shaderLinearDepth = new Shader(gl, "", "");
+		shaderLinearDepth = new Shader(gl, "", "");
+		shaderViewNormal = new Shader(gl, "", "");
+		shaderHBAO = new Shader(gl, "", "") ;
+		shaderBlur = new Shader(gl, "", "");
+		shaderSSAO = new Shader(gl, "", "");
+		shaderDeinterleave = new Shader(gl, "", "");
+		shaderReinterleave = new Shader(gl, "", "");
+
+    }
+
+
+}
+
+</script>
