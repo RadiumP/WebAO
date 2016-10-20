@@ -103,10 +103,22 @@ window.onload = function() {
 	//
 	var MAX_SAMPLES = 8;
 	var HBAO_RANDOM_ELEMENTS = 16;
+	var NUM_MRT = 8;
+	var SCR_WIDTH = 1920; 
+	var SCR_HEIGHT = 1080;
+
+	var quarterWidth = ((SCR_WIDTH + 3) / 4);
+	var quarterHeight = ((SCR_HEIGHT + 3) / 4);
+
+    var hbaoRandom = new Array(HBAO_RANDOM_ELEMENTS * MAX_SAMPLES);
+	var hbaoRandomShort = new Array(HBAO_RANDOM_ELEMENTS*MAX_SAMPLES * 4);
+
+
 
 	//shader
 	var shaderLinearDepth;
 	var shaderViewNormal;
+	var shaderHBAOPlus;
 	var shaderHBAO;
 	var shaderBlur;
 	var shaderSSAO;
@@ -136,6 +148,8 @@ window.onload = function() {
 
 	var noiseTexture;
 	var kernel = [];
+
+	var InvFullResolution;
 
 
 	var ssaoFSQuad; //renderquad   
@@ -170,7 +184,7 @@ window.onload = function() {
 		// }	
 		if(aoShader === 'HBAO+')
 		{
-			ssaoShader = new Shader(gl, "ssao.vert", "hbaoplus.frag");
+			//ssaoShader = new Shader(gl, "ssao.vert", "hbaoplus.frag");
 			
 		}
 		// if(aoShader === 'HBAO'){
@@ -209,22 +223,526 @@ window.onload = function() {
     function setup() {
 
     	var supported = gl.getSupportedExtensions();
-		gl.getExtension("OES_standard_derivatives");                  
+		gl.getExtension("OES_standard_derivatives");
+		var ext = gl.getExtension("WEBGL_draw_buffers");                 
 		PreGLExt.log("Supported WebGL extensions: " + supported);
 
 		//linear
-		shaderLinearDepth = new Shader(gl, "", "");
-		shaderLinearDepth = new Shader(gl, "", "");
-		shaderViewNormal = new Shader(gl, "", "");
-		shaderHBAO = new Shader(gl, "", "") ;
-		shaderBlur = new Shader(gl, "", "");
-		shaderSSAO = new Shader(gl, "", "");
-		shaderDeinterleave = new Shader(gl, "", "");
-		shaderReinterleave = new Shader(gl, "", "");
+		//shaderDrawScene = new Shader(gl, "scene.vs", "scene.fs");
+		shaderLinearDepth = new Shader(gl, "showDepth.vs", "showDepth.fs");
+		shaderViewNormal = new Shader(gl, "fullquad.vs", "viewnormal.fs");
+		shaderHBAOPlus = new Shader(gl, "fullquad.vs", "hbaoplus.fs") ;
+		shaderBlur = new Shader(gl, "fullquad.vs", "blur.fs");
+		//shaderSSAO = new Shader(gl, "", "");
+		shaderDeinterleave = new Shader(gl, "fullquad.vs", "deinter.fs");
+		shaderReinterleave = new Shader(gl, "fullquad.vs", "reinter.fs");
+
+		//initMisc
+		var numDir = 8.0;
+		for(var i = 0; i < HBAO_RANDOM_ELEMENTS * MAX_SAMPLES; i++)
+		{
+			var Rand1 = Math.random();
+			var Rand2 = Math.random();
+			var Angle = 2.0 * Math.PI * Rand1 / numDir;
+			hbaoRandom[i] = new PreGL.Vec4(Math.cos(Angle), Math.sin(Angle), Rand2, 0.0);
+
+			// var SCALE = (1 << 15);
+
+			// hbaoRandomShort[i * 4 + 0] = (SCALE * hbaoRandom[i].x);
+			// hbaoRandomShort[i * 4 + 1] = (SCALE * hbaoRandom[i].y);
+			// hbaoRandomShort[i * 4 + 2] = (SCALE * hbaoRandom[i].z);
+			// hbaoRandomShort[i * 4 + 3] = (SCALE * hbaoRandom[i].w);
+		}
+
+		ssaoFSQuad = new FullScreenQuad(gl);
+		depthlinearFBO = new FBO(gl, SCR_WIDTH, SCR_HEIGHT);		
+		viewnormalFBO = new FBO(gl, SCR_WIDTH, SCR_HEIGHT);	
+
+		ssaoFbo = new FBO(gl, SCR_WIDTH, SCR_HEIGHT);
+		
+
+		//deinFbo
+		hbao2_deinterleaveFBO = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, hbao2_deinterleaveFBO);
+		ext.drawBuffersWEBGL([
+  			ext.COLOR_ATTACHMENT0_WEBGL, // gl_FragData[0]
+  			ext.COLOR_ATTACHMENT1_WEBGL, // gl_FragData[1]
+  			ext.COLOR_ATTACHMENT2_WEBGL, // gl_FragData[2]
+  			ext.COLOR_ATTACHMENT3_WEBGL  // gl_FragData[3]
+  			ext.COLOR_ATTACHMENT4_WEBGL, // gl_FragData[0]
+  			ext.COLOR_ATTACHMENT5_WEBGL, // gl_FragData[1]
+  			ext.COLOR_ATTACHMENT6_WEBGL, // gl_FragData[2]
+  			ext.COLOR_ATTACHMENT7_WEBGL  // gl_FragData[3]
+		]);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+		for(var i = 0; i < HBAO_RANDOM_ELEMENTS; i++)
+		{	
+
+			//???
+			hbao2depthviewTex[i] = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, hbao2depthviewTex[i]);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F,
+                quarterWidth, quarterHeight, 0,
+                gl.RGBA, gl.UNSIGNED_BYTE, null);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); //LINEAR_MIPMAP_LINEAR
+  			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  			gl.bindTexture(gl.TEXTURE_2D, null); 
+
+		}
+
+
+
+
+		//hbao
+		hbao2_calcFBO = gl.createFramebuffer();
+		gl.bindFramebuffer(gl.FRAMEBUFFER, hbao2_calcFBO);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+
+
+		loadAOShader();
+		load();
+
+		prevTime = (new Date()).getTime();  
+
+		//ubo
+		InvFullResolution = new PreGL.Vec2(1.0/SCR_WIDTH, 1.0/SCR_HEIGHT);
+
+
+    }//setup
+
+    function hbaoplusDraw(){
+    	{
+	    	var currTime = (new Date()).getTime();
+			var deltaTime = (currTime - prevTime)/1000;
+			prevTime = currTime;		                              
+			time += deltaTime;	  
+			fpsTime += deltaTime;
+			fpsFrames++;
+			if (fpsTime > 5) {
+				fps = fpsFrames / fpsTime;
+				fpsTime = 0;   
+				fpsFrames = 0;			
+				PreGLExt.log("FPS : " + fps);  
+			}          
+			
+			gl.clearColor(0, 0, 0, 0);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);						
+			gl.enable(gl.DEPTH_TEST);      
+			
+
+			handleKeys();
+
+			cameraX = -4;
+			cameraY = 0;
+			cameraZ = -4;
+
+			targetX = 0;
+			targetY = 0;
+			targetZ = 0;
+
+			front = new PreGL.Vec3(Math.cos(yaw * Math.PI / 180.0 ) * Math.cos(pitch * Math.PI / 180.0 ), Math.sin(pitch * Math.PI / 180.0 ), Math.sin(yaw * Math.PI / 180.0 ) * Math.cos(pitch * Math.PI / 180.0 ));
+			var up = new PreGL.Vec3(0, 1, 0);
+			right.cross2(front, up);
+			var lookAt = new PreGL.Vec3(targetX - cameraX, targetY - cameraY, targetZ - cameraZ);
+
+			var cameraPos = new PreGL.Vec3(cameraX, cameraY, cameraZ);//controls
+			cameraPos.add2(cameraPos, move);
+			var targetPos = new PreGL.Vec3();
+			targetPos.add2(front, cameraPos);
+			//sle.log(front);
+			var camera = new PerspectiveCamera(45.0, depthFbo.width/depthFbo.height, 1, 2000, cameraPos, targetPos);
+			//target (0,0,0)
+			
+			PreGLExt.once("camera frustum", function() {
+			   var frustumCorners = camera.getFrustumCorners();
+			});
+		}
+
+
+		//depthmap
+		{
+			depthlinearFBO.bind();		
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			gl.viewport(0, 0, depthlinearFBO.width, depthlinearFBO.height);
+
+			// uniform mat4 projectionMatrix;
+			// uniform mat4 modelViewMatrix;  	
+			// uniform mat4 normalMatrix;  	
+			// uniform mat4 viewMatrix;
+			// uniform float near;
+			// uniform float far;
+			shaderLinearDepth.use();
+			
+			
+			shaderLinearDepth.set("near", camera.near);
+			shaderLinearDepth.set("far", camera.far);
+			
+			modelViewMatrix = camera.getModelViewMatrix([10, 0, 0], [Math.PI / 4 , 0, 1, 0], [1, 1, 1]);		// * time
+
+			shaderLinearDepth.set("projectionMatrix", camera.projectionMatrix);
+			shaderLinearDepth.set("viewMatrix", camera.viewMatrix);	
+			shaderLinearDepth.set("modelViewMatrix", modelViewMatrix); 
+			normalMatrix = modelViewMatrix.invert().transpose();
+			shaderLinearDepth.set("normalMatrix", normalMatrix);
+
+			//pntest draw
+			renderScene(camera, shaderLinearDepth, time); 
+			
+			depthlinearFBO.unbind(); 
+		}
+
+		//viewnormal
+		{
+			viewnormalFBO.bind();
+			shaderViewNormal.Use();
+			
+			//set
+			shaderViewNormal.set("near", camera.near);
+			shaderViewNormal.set("far", camera.far);
+			shaderViewNormal.set("aspectRatio", camera.aspectRatio);
+			shaderLinearDepth.set("projectionMatrix", camera.projectionMatrix);
+			shaderLinearDepth.set("viewMatrix", camera.viewMatrix);	
+			shaderLinearDepth.set("modelViewMatrix", modelViewMatrix); 
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);  
+
+
+			renderScene(camera, shaderViewNormal, time); 
+			viewnormalFBO.unbind(); 
+		}
+
+		//deinter
+		{
+		
+			gl.bindFramebuffer(gl.FRAMEBUFFER, hbao2_deinterleaveFBO);
+			gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			gl.viewport(0, 0, hbao2_deinterleaveFBO.width, hbao2_deinterleaveFBO.height);
+
+			shaderDeinterleave.use();
+			//set uniforms
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, depthFbo.colorBuffer);  
+
+			//for
+			for (var i = 0; i < HBAO_RANDOM_ELEMENTS; i += NUM_MRT) 
+			{
+					shaderDeinterleave.set("info", 
+					[float(i % 4) + 0.5, float(i / 4) + 0.5f, InvFullResolution[0], InvFullResolution[1]]);//info
+
+					
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT0_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+0], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT1_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+1], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT2_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+2], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT3_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+i+3], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT4_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+4], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT5_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+5], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT6_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+6], 0);
+					gl.FramebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT7_WEBGL,gl.TEXTURE_2D,hbao2depthviewTex[i+7], 0);
+
+					//gl.framebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tx[0], 0);
+
+					renderScene(camera, shaderDeinterleave, time);
+					//glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+			depthlinearFBO.unbind();
+		}
+
+		{
+			//hbaoplus
+			gl.bindFramebuffer(gl.FRAMEBUFFER, hbao2_calcFBO);
+			gl.viewport(0, 0, hbao2_calcFBO.width, hbao2_calcFBO.height);
+			shaderHBAOPlus.use();
+
+			//set
+
+			//texturelayer
+			renderScene(camera, shaderHBAOPlus, time);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		}
+		//reinter
+		ssaoFbo.bind();
+		gl.viewport(0, 0, ssaoFbo.width, ssaoFbo.height);
+		shaderReinterleave.use();
+
+		//set
+
+		renderScene(camera, shaderReinterleave, time);
+		ssaoFbo.unbind();
+
+
+		//blur
+
+		shaderBlur.use();
+		//set
+
+		ssaoFSQuad.draw(shaderBlur);
+		gl.viewport(0, 0, canvas.width, canvas.height);  
+		
+
+		requestAnimFrame(hbaoplusDraw, canvas);//loop
 
     }
 
+    function renderScene(camera, shader, time){
+    	pnTest.draw(shader);
+    }
+
+    function start()
+    {
+    	requestAnimFrame(hbaoplusDraw, canvas);
+    }
+
+    var currentlyPressedKeys = {};
+
+    function handleKeyDown(event) {
+        currentlyPressedKeys[event.keyCode] = true;
+        //console.log("down");
+    }
+
+
+    function handleKeyUp(event) {
+        currentlyPressedKeys[event.keyCode] = false;
+    }
+ 
+
+	function handleKeys() {
+        if (currentlyPressedKeys[33]) {
+            // Page Up
+            pitchRate = 0.1;
+        } else if (currentlyPressedKeys[34]) {
+            // Page Down
+            pitchRate = -0.1;
+        } else {
+            pitchRate = 0;
+        }
+
+        if (currentlyPressedKeys[37] || currentlyPressedKeys[65]) {
+            // Left cursor key or A
+            //yawRate += Math.PI / 32.0;
+            move.sub2(move, right);
+        } else if (currentlyPressedKeys[39] || currentlyPressedKeys[68]) {
+            // Right cursor key or D
+            //yawRate -= Math.PI / 32.0;
+             move.add2(move, right);
+        } else {
+            //yawRate = 0;
+        }
+
+        if (currentlyPressedKeys[38] || currentlyPressedKeys[87]) {
+            // Up cursor key or W
+            var temp = front.scaled(0.5);
+            move.add2(move,temp);
+        } else if (currentlyPressedKeys[40] || currentlyPressedKeys[83]) {
+            // Down cursor key
+            var temp = front.scaled(0.5);
+            move.sub2(move,temp);
+        } else {
+            speed = 0;
+        }
+
+    }
+
+    setup();
+    start();
 
 }
 
 </script>
+
+
+<script type="glsl" id="showDepth.vs">  
+
+	attribute vec4 position;
+	attribute vec3 normal;
+	attribute vec2 texCoord;
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  	
+	uniform mat4 normalMatrix;  	
+	uniform mat4 viewMatrix;
+	uniform float near;
+	uniform float far;
+
+	varying vec3 vN;
+	varying vec2 vTexCoord;
+	varying float depth;                                            
+	varying vec4 vVSPos;
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+		
+		vN = normalize((normalMatrix * vec4(normal, 1.0)).xyz);
+		
+		//linear depth in camera space (0..far)
+		depth = (modelViewMatrix * position).z/far;
+				
+	   	vTexCoord = texCoord;        
+		vVSPos = projectionMatrix * modelViewMatrix * position;
+	}                        
+
+
+</script>
+
+<script type="glsl" id="showDepth.fs"> 
+	
+	#ifdef GL_ES
+	precision highp float;
+	#endif          
+	uniform float near;
+	uniform float far;
+
+	varying float depth;   
+	varying vec3 vN;     
+	varying vec4 vVSPos;  
+
+	//from http://spidergl.org/example.php?id=6
+	vec4 packDepth(const in float depth) {
+		const vec4 bit_shift = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);
+		const vec4 bit_mask  = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);
+		//vec4 res = fract(depth * bit_shift);
+		vec4 res = mod( depth * bit_shift * vec4( 255 ), vec4( 256 ) ) / vec4( 255 );
+		res -= res.xxyz * bit_mask;
+		return res;    		
+	}
+
+
+
+	void main() {         
+		gl_FragData[0] = packDepth(-depth);
+		gl_FragData[0].r = -depth/far;
+		//gl_FragData[0].xyz = vVSPos.xyz;
+		//gl_FragData[ 0 ] = packDepth(LinearizeDepth( gl_FragCoord.z)) ;/// far);
+		//gl_FragData[0].w = LinearizeDepth( gl_FragCoord.z / far);
+		//gl_FragData[ 0 ] = packDepth(gl_FragCoord.z);
+		//gl_FragData[ 0 ].r = gl_FragCoord.z;
+	}
+</script>
+
+
+<script type="glsl" id="fullquad.vs"> 
+	attribute vec4 position;
+	attribute vec2 texCoord;
+
+	uniform mat4 projectionMatrix;
+	uniform mat4 modelViewMatrix;  
+	uniform mat4 viewMatrix;
+
+	varying vec2 vTexCoord;
+
+	void main() {	
+		gl_Position = projectionMatrix * modelViewMatrix * position;
+	   	vTexCoord = texCoord;
+	}
+
+</script>
+
+<script type="glsl" id="viewnormal.fs"> 
+	#extension GL_OES_standard_derivatives : enable
+
+	uniform sampler2D depthTex;
+	uniform float near;
+	uniform float far; 
+	uniform float aspectRatio; 
+
+
+	varying vec2 vTexCoord; 
+
+
+	float unpackDepth(const in vec4 rgba_depth) {
+		const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+		float depth = dot(rgba_depth, bit_shift);
+		return depth;
+	}                
+
+	vec3 getViewRay(vec2 tc) {
+		float hfar = 2.0 * tan(fov/2.0)  * far;
+		float wfar = hfar * aspectRatio;    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		return ray ; 	                   
+	} 
+
+	float getDepth(vec2 coord) {                          
+		
+		return unpackDepth(texture2D(depthTex, coord.xy));
+		
+	}
+
+
+	vec3 ReconstructNormal(vec2 UV, vec3 P)
+	{
+		return -normalize(cross(dFdy(P), dFdx(P)));
+	} 
+
+	void main(){
+		vec2 screenPos = vec2(gl_FragCoord.x / 1920.0, gl_FragCoord.y / 1080.0);
+
+		vec3 P = getViewRay(screenPos) * getDepth(screenPos);
+		vec3 N = ReconstructNormal(texCoord, P);
+
+		gl_FragColor.rgb = vec3(N * 0.5 + 0.5);
+	    gl_FragColor.a = 0.0;   
+	}  
+</script>
+
+
+<script type="glsl" id="deinter.fs"> 
+ 	uniform vec4 info;
+ 	vec2 uvOffset = info.xy;
+ 	vec2 invResolution = info.zw;
+
+ 	uniform sampler2D depthTex;
+
+ 	void main()
+ 	{
+ 		vec2 uv = round(gl_FragCoord.xy + 0.5) * 4.0 + uvOffset;
+  		//ivec2 tc = ivec2(uv);//floor
+  		vec2 tc = vec2(uv.x / 1920.0, uv.y / 1080.0);
+  		// out_Color[0] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(0,0)).r;
+		  // out_Color[1] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(1,0)).r;
+		  // out_Color[2] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(2,0)).r;
+		  // out_Color[3] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(3,0)).r;
+		  // out_Color[4] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(0,1)).r;
+		  // out_Color[5] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(1,1)).r;
+		  // out_Color[6] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(2,1)).r;
+		  // out_Color[7] = texelFetchOffset(gPositionDepth, tc, 0, ivec2(3,1)).r;
+
+		//normalized tc
+		gl_FragData[0] = texture2D(depthTex, tc);
+		gl_FragData[1] = texture2D(depthTex, tc + vec2(1.0 / 1920.0, 0.0 / 1080.0));
+		gl_FragData[2] = texture2D(depthTex, tc + vec2(2.0 / 1920.0, 0.0 / 1080.0));
+		gl_FragData[3] = texture2D(depthTex, tc + vec2(3.0 / 1920.0, 0.0 / 1080.0));
+		gl_FragData[4] = texture2D(depthTex, tc + vec2(0.0 / 1920.0, 1.0 / 1080.0));
+		gl_FragData[5] = texture2D(depthTex, tc + vec2(1.0 / 1920.0, 1.0 / 1080.0));
+		gl_FragData[6] = texture2D(depthTex, tc + vec2(2.0 / 1920.0, 1.0 / 1080.0));
+		gl_FragData[7] = texture2D(depthTex, tc + vec2(3.0 / 1920.0, 1.0 / 1080.0));
+
+ 	}
+
+
+</script>
+
+
+<style type="text/css">
+	body {
+		margin: 0;  
+		background: #222;
+	}        
+	#canvas {    
+		width: 1920px;
+		margin: 0 auto; 
+		display: block;
+	}
+</style>
+</head>
+<body>	    
+	<canvas id="canvas" width="1920" height="1080"></canvas> 
+		
+</body>
+</html>
