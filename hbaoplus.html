@@ -243,7 +243,7 @@ window.onload = function() {
 		shaderLinearDepth = new Shader(gl, "showDepth.vs", "showDepth.fs");
 		shaderViewNormal = new Shader(gl, "fullquad.vs", "viewnormal.fs");
 		shaderHBAOPlus = new Shader(gl, "fullquad.vs", "hbaoplus.fs") ;
-		shaderBlur = new Shader(gl, "fullquad.vs", "blur.fs");
+		shaderBlur = new Shader(gl, "blur.vs", "blur.fs");
 		//shaderSSAO = new Shader(gl, "", "");
 		shaderDeinterleave = new Shader(gl, "fullquad.vs", "deinter.fs");
 		shaderReinterleave = new Shader(gl, "fullquad.vs", "reinter.fs");
@@ -437,7 +437,7 @@ window.onload = function() {
 			shaderLinearDepth.set("near", camera.near);
 			shaderLinearDepth.set("far", camera.far);
 			
-			modelViewMatrix = camera.getModelViewMatrix([10, 0, 0], [0, 0, 0, 0], [1, 1, 1]);		// * time
+			modelViewMatrix = camera.getModelViewMatrix([15, -10, 0], [Math.PI/2.0, 0,1, 0], [1, 1, 1]);		// * time
 
 			shaderLinearDepth.set("projectionMatrix", camera.projectionMatrix);
 			shaderLinearDepth.set("viewMatrix", camera.viewMatrix);	
