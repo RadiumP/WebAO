@@ -241,12 +241,12 @@ window.onload = function() {
 		//linear
 		//shaderDrawScene = new Shader(gl, "scene.vs", "scene.fs");
 		shaderLinearDepth = new Shader(gl, "showDepth.vs", "showDepth.fs");
-		shaderViewNormal = new Shader(gl, "fullquad.vs", "viewnormal.fs");
-		shaderHBAOPlus = new Shader(gl, "fullquad.vs", "hbaoplus.fs") ;
+		shaderViewNormal = new Shader(gl, "blur.vs", "viewnormal.fs");
+		shaderHBAOPlus = new Shader(gl, "blur.vs", "hbaoplus.fs") ;
 		shaderBlur = new Shader(gl, "blur.vs", "blur.fs");
 		//shaderSSAO = new Shader(gl, "", "");
-		shaderDeinterleave = new Shader(gl, "fullquad.vs", "deinter.fs");
-		shaderReinterleave = new Shader(gl, "fullquad.vs", "reinter.fs");
+		shaderDeinterleave = new Shader(gl, "blur.vs", "deinter.fs");
+		shaderReinterleave = new Shader(gl, "blur.vs", "reinter.fs");
 
 		//initMisc
 		var numDir = 8.0;
@@ -439,9 +439,9 @@ window.onload = function() {
 			
 			modelViewMatrix = camera.getModelViewMatrix([15, -10, 0], [Math.PI/2.0, 0,1, 0], [1, 1, 1]);		// * time
 
-			shaderLinearDepth.set("projectionMatrix", camera.projectionMatrix);
-			shaderLinearDepth.set("viewMatrix", camera.viewMatrix);	
-			shaderLinearDepth.set("modelViewMatrix", modelViewMatrix); 
+			// shaderLinearDepth.set("projectionMatrix", camera.projectionMatrix);
+			// shaderLinearDepth.set("viewMatrix", camera.viewMatrix);	
+			// shaderLinearDepth.set("modelViewMatrix", modelViewMatrix); 
 			normalMatrix = modelViewMatrix.invert().transpose();
 			shaderLinearDepth.set("normalMatrix", normalMatrix);
 
@@ -466,9 +466,9 @@ window.onload = function() {
 			shaderViewNormal.set("near", camera.near);
 			shaderViewNormal.set("far", camera.far);
 			shaderViewNormal.set("aspectRatio", camera.aspectRatio);
-			shaderViewNormal.set("projectionMatrix", camera.projectionMatrix);
-			shaderViewNormal.set("viewMatrix", camera.viewMatrix);	
-			shaderViewNormal.set("modelViewMatrix", modelViewMatrix); 
+			// shaderViewNormal.set("projectionMatrix", camera.projectionMatrix);
+			// shaderViewNormal.set("viewMatrix", camera.viewMatrix);	
+			// shaderViewNormal.set("modelViewMatrix", modelViewMatrix); 
 
 			shaderViewNormal.set("depthTex", 0);
 
@@ -476,7 +476,9 @@ window.onload = function() {
 			gl.bindTexture(gl.TEXTURE_2D, depthFBO.colorBuffer);  
 
 
-			renderScene(camera, shaderViewNormal, time); 
+			//renderScene(camera, shaderViewNormal, time); 
+			ssaoFSQuad.draw(shaderViewNormal);
+
 			viewnormalFBO.unbind(); 
 		}
 
@@ -491,9 +493,9 @@ window.onload = function() {
 			shaderDeinterleave.use();
 
 			shaderDeinterleave.set("depthTex", 0);
-			shaderDeinterleave.set("projectionMatrix", camera.projectionMatrix);
-			shaderDeinterleave.set("viewMatrix", camera.viewMatrix);	
-			shaderDeinterleave.set("modelViewMatrix", modelViewMatrix); 
+			// shaderDeinterleave.set("projectionMatrix", camera.projectionMatrix);
+			// shaderDeinterleave.set("viewMatrix", camera.viewMatrix);	
+			// shaderDeinterleave.set("modelViewMatrix", modelViewMatrix); 
 
 
 			//set uniforms
@@ -519,7 +521,8 @@ window.onload = function() {
 					//gl.framebufferTexture2D(gl.FRAMEBUFFER, ext.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tx[0], 0);
 					//gl.clearColor(0, 0, 0, 1);
 					//gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-					renderScene(camera, shaderDeinterleave, time);
+					//renderScene(camera, shaderDeinterleave, time);
+					ssaoFSQuad.draw(shaderDeinterleave);
 					//glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -529,8 +532,8 @@ window.onload = function() {
 		{
 			
 			gl.bindFramebuffer(gl.FRAMEBUFFER, hbao2_calcFBO);
-			gl.clearColor(0, 0, 0, 1);
-		    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.clearColor(0, 0, 0, 1);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			gl.viewport(0, 0, quarterWidth, quarterHeight);
 			shaderHBAOPlus.use();
 
@@ -550,9 +553,9 @@ window.onload = function() {
 			// uniform sampler2D texViewNormal;
 			var R = 1.0;
 
-			shaderHBAOPlus.set("projectionMatrix", camera.projectionMatrix);
-			shaderHBAOPlus.set("viewMatrix", camera.viewMatrix);	
-			shaderHBAOPlus.set("modelViewMatrix", modelViewMatrix); 
+			// shaderHBAOPlus.set("projectionMatrix", camera.projectionMatrix);
+			// shaderHBAOPlus.set("viewMatrix", camera.viewMatrix);	
+			// shaderHBAOPlus.set("modelViewMatrix", modelViewMatrix); 
 
 			shaderHBAOPlus.set("far", camera.far);
 			shaderHBAOPlus.set("aspectRatio", quarterWidth / quarterHeight);
@@ -582,8 +585,8 @@ window.onload = function() {
 				//	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textures.hbao2_resultarray, 0, i);
 
 				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D,hbao2resultarrayTex[i],0);
-				
-				renderScene(camera, shaderHBAOPlus, time);
+				ssaoFSQuad.draw(shaderHBAOPlus);
+				//renderScene(camera, shaderHBAOPlus, time);
 			}	
 
 
@@ -595,16 +598,16 @@ window.onload = function() {
 		//reinter
 		{
 			ssaoFbo.bind();
-			gl.clearColor(0, 0, 0, 1);
+			gl.clearColor(0, 0, 0 , 1);
 			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 			gl.viewport(0, 0, ssaoFbo.width, ssaoFbo.height);
 
 			shaderReinterleave.use();
 
 			//set
-			shaderReinterleave.set("projectionMatrix", camera.projectionMatrix);
-			shaderReinterleave.set("viewMatrix", camera.viewMatrix);	
-			shaderReinterleave.set("modelViewMatrix", modelViewMatrix); 
+			// shaderReinterleave.set("projectionMatrix", camera.projectionMatrix);
+			// shaderReinterleave.set("viewMatrix", camera.viewMatrix);	
+			// shaderReinterleave.set("modelViewMatrix", modelViewMatrix); 
 
 			shaderReinterleave.set("texResultsArray", [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
 
@@ -618,6 +621,7 @@ window.onload = function() {
 
 		
 			renderScene(camera, shaderReinterleave, time);
+			//ssaoFSQuad.draw(shaderReinterleave); 
 			ssaoFbo.unbind();
 
 		}
@@ -634,7 +638,7 @@ window.onload = function() {
 			//debug
 			gl.bindTexture(gl.TEXTURE_2D, ssaoFbo.colorBuffer);      
 		
-
+			//renderScene(camera, shaderBlur, time);
 			ssaoFSQuad.draw(shaderBlur); 
 			gl.activeTexture(gl.TEXTURE0);  
 		
@@ -651,6 +655,12 @@ window.onload = function() {
     }
 
     function renderScene(camera, shader, time){
+    	shader.use();    	         
+		shader.set("projectionMatrix", camera.projectionMatrix);		
+
+		shader.set("viewMatrix", camera.viewMatrix);
+		modelViewMatrix = camera.getModelViewMatrix([15, -10, 0], [Math.PI/2.0, 0,1, 0], [1, 1, 1]);
+		shader.set("modelViewMatrix", modelViewMatrix); 	
     	pnTest.draw(shader);
     }
 
@@ -795,18 +805,20 @@ window.onload = function() {
 
 	void main() {	
 		//gl_Position = vec4(texCoord * 2.0 - 1.0,0,1.0);// ???
-		//gl_Position = projectionMatrix * modelViewMatrix * position;
+		gl_Position = projectionMatrix * modelViewMatrix * position;
 		vec4 pos = projectionMatrix * modelViewMatrix * position;
-		   // Vertex in NDC-space
+
+		// Vertex in NDC-space
    		pos.xyz /=pos.w;       // Rescale: [-1,1]^3
-    pos.w    = 1.0 / pos.w; // Invert W
+    	pos.w    = 1.0 / pos.w; // Invert W
 
     // Vertex in window-space
     	pos.xyz *= vec3 (0.5) + vec3 (0.5); // Rescale: [0,1]^3
     //pos.xy  *= window;                  // Scale and Bias for Viewport
 
-	   	vTexCoord = pos.xy;
-	   	gl_Position = vec4(vTexCoord * 2.0 - 1.0,0,1.0);
+	   	vTexCoord = texCoord;
+	    //gl_Position = vec4(vTexCoord * 2.0 - 1.0,0.0,1.0);
+	   	
 	}
 
 </script>
@@ -850,7 +862,7 @@ window.onload = function() {
 	vec3 getViewRay(vec2 tc) {
 		float hfar = 2.0 * tan(fov/2.0)  * far;
 		float wfar = hfar * aspectRatio;    
-		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), far);    
 		return ray ; 	                   
 	} 
 
@@ -972,7 +984,7 @@ float getDepth(vec2 coord) {
 	vec3 getViewRay(vec2 tc) {
 		float hfar = 2.0 * tan(fov/2.0)  * far;
 		float wfar = hfar * aspectRatio;    
-		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), -far);    
+		vec3 ray = vec3(wfar * (tc.x - 0.5), hfar * (tc.y - 0.5), far);    
 		return ray; 	                   
 	}   
 
@@ -1061,7 +1073,7 @@ void main()
   	vec4 NormalAndAO =  texture2D(texViewNormal, uv);
 
 
-  	vec3 ViewNormal =  (NormalAndAO.xyz * 2.0 - 1.0);
+  	vec3 ViewNormal =  -(NormalAndAO.xyz * 2.0 - 1.0);
 
   	float RadiusPixels = RadiusToScreen / (-ViewPosition.z);
 
